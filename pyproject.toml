@@ -1,0 +1,22 @@
+[project]
+name = "ultrasound-defect-outlier-detection"
+version = "0.1.0"
+description = "."
+authors = [
+    { name = "Thiago Kalid", email = "thiagokkalid@gmail.com" },
+]
+license = { file = "MIT" }
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "scikit-learn",
+    "seaborn",
+    "numpy",
+    "matplotlib",
+    "pyod",
+    "tqdm",
+    "pandas",
+    "mini-auspex",
+    "joblib",
+    "PyWavelets"
+]

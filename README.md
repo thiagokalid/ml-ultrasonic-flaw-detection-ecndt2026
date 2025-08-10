@@ -1,1 +1,1 @@
-# ultrasound-defect-outlier-detection
+# FinalProject_PatternRecognition
