@@ -1,0 +1,160 @@
+# === Standard library ===
+import math
+
+# === Third-party libraries ===
+import numpy as np
+import pandas as pd
+import pywt
+import joblib
+
+# --- Scikit-learn ---
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
+
+# Data root:
+PKL_DATA_PATH = "../data/pkl/"
+
+# --- Parameters ---
+N_PCA_COMPONENTS = 20  # e.g., reduce angle dimension to 5
+BETA_SCORE_CTE = 1
+
+# -- Wavelet feature extractor from a 2D array --
+def extract_wavelet_features_2d(image, wavelet='sym4', level=2):
+    coeffs = pywt.wavedec2(image, wavelet=wavelet, level=level)
+    features = []
+
+    def compute_features(subband):
+        flat = subband.ravel()
+        # energy = np.sum(flat ** 2)
+        # mean_val = np.mean(flat)
+        # std_val = np.std(flat)
+        # power = np.abs(flat) ** 2
+        # power_sum = np.sum(power)
+        # ent = entropy(power / power_sum) if power_sum != 0 else 0
+
+        energy = np.sum(flat ** 2)
+        l1_norm = np.max(np.sum(np.abs(subband), axis=0))
+        f_norm = np.mean(np.abs(subband)**2)**(1/2)
+        delta_norm = np.max(np.abs(subband))
+
+        return [l1_norm, f_norm]
+
+    # LL (approximation)
+    features.extend(compute_features(coeffs[0]))
+
+    # Detail subbands at each level: (LH, HL, HH)
+    for (cH, cV, cD) in coeffs[1:]:
+        features.extend(compute_features(cH))
+        features.extend(compute_features(cV))
+        features.extend(compute_features(cD))
+
+    return np.array(features)
+
+
+# --- Function to pad arrays to target shape ---
+def pad_to_shape(arr, target_shape):
+    padded = np.zeros(target_shape, dtype=arr.dtype)
+    slices = tuple(slice(0, min(s, t)) for s, t in zip(arr.shape, target_shape))
+    padded[slices] = arr[slices]
+    return padded
+
+
+# --- Load the dataset ---
+df = pd.read_pickle(PKL_DATA_PATH + 'acoustic_lens_sscan_dataset.pkl')
+
+# Define training mask correctly:
+training_mask = (
+    (
+        (df['filename'].apply(lambda x: x[-6:] != "v2.m2k")) &
+        (df['contain_flaw'] == False)
+        # (df['ith_shot'] >= 40)
+    )
+    |
+    (
+        (df['filename'].apply(lambda x: x[:12] == "passive_dir_")) &
+        (df['contain_flaw'] == False) &
+        (df['filename'].apply(lambda x: x[-6:] != "v2.m2k"))
+        # (df['ith_shot'] <= 5 | (df['ith_shot'] >= 20))
+    )
+    |
+    (df['filename'].apply(lambda x: x[3:8] == "_row_")) &
+    (df['contain_flaw'] == False) &
+    (df['filename'].apply(lambda x: x[-6:] != "v2.m2k"))
+)
+
+# Normalize S-scan:
+df['sub_sscan'] = df['sub_sscan'] / df['sscan_max']
+
+# Extract sets:
+train_df = df[training_mask]
+test_df = df[~training_mask]
+
+#%%
+# -- PCA features --
+
+# --- Find max shape on training set ---
+max_shape = tuple(np.max([arr.shape for arr in train_df['sub_sscan']], axis=0))
+
+# --- Pad and flatten ---
+X_pxs_train = np.stack(train_df['sub_sscan'].apply(lambda x: pad_to_shape(x, max_shape).ravel()))
+X_pxs_test = np.stack(test_df['sub_sscan'].apply(lambda x: pad_to_shape(x, max_shape).ravel()))
+
+# --- Fit PCA on training ---
+pca = PCA(n_components=N_PCA_COMPONENTS)
+pca.fit(X_pxs_train)
+
+# --- Transform both sets ---
+X_pxs_train_pca = pca.transform(X_pxs_train)
+X_pxs_test_pca = pca.transform(X_pxs_test)
+#%% Select features for training and testing:
+
+X_train_parts, X_test_parts = [], []
+
+for df, parts, pca_features in zip(
+        [train_df, test_df],
+        [X_train_parts, X_test_parts],
+        [X_pxs_train_pca, X_pxs_test_pca]
+):
+    # -- One-hot encode subroi_idx --
+    subroi_ohe = pd.get_dummies(df['subroi_idx'], prefix='subroi')
+    parts.append(subroi_ohe)
+
+    # -- Statistical features --
+    parts.append(df['sub_sscan'].apply(np.mean).to_frame(name='mean'))
+    parts.append(df['sub_sscan'].apply(np.std).to_frame(name='std'))
+
+    # -- Wavelet features --
+    wavelet_features = np.stack(df['sub_sscan'].apply(extract_wavelet_features_2d))
+    wavelet_df = pd.DataFrame(wavelet_features, index=df.index)
+    wavelet_df.columns = [f"wavelet_{i}" for i in range(wavelet_df.shape[1])]
+    parts.append(wavelet_df)
+
+    # -- PCA features --
+    pca_df = pd.DataFrame(pca_features, index=df.index)
+    pca_df.columns = [f"pca_{i}" for i in range(pca_df.shape[1])]
+    parts.append(pca_df)
+
+
+# --- Concatenate features ---
+X_train = pd.concat(X_train_parts, axis=1)
+X_test = pd.concat(X_test_parts, axis=1)
+
+# Align columns in test to match training (some categories might be missing in test set)
+X_test = X_test.reindex(columns=X_train.columns, fill_value=0)
+
+# --- Standardize numeric features only ---
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
+
+# --- Labels ---
+y_train = train_df['contain_flaw']
+y_test = test_df['contain_flaw']
+
+# %% Save X and y to disk
+joblib.dump(X_train, PKL_DATA_PATH + "X_train.pkl")
+joblib.dump(X_test, PKL_DATA_PATH + "X_test.pkl")
+joblib.dump(y_train.to_numpy(), PKL_DATA_PATH + "y_train.pkl")
+joblib.dump(y_test.to_numpy(), PKL_DATA_PATH + "y_test.pkl")
+test_df.to_pickle(PKL_DATA_PATH + "test_df.pkl")
+train_df.to_pickle(PKL_DATA_PATH + "train_df.pkl")
