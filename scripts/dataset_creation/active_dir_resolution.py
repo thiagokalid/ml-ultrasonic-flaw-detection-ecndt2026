@@ -20,7 +20,7 @@ NUM_SUBROIS_XAXIS = 20
 data = pd.DataFrame()
 
 
-with open('../../data/m2k/inspection_info.json', 'r') as f:
+with open('../inspection_info.json', 'r') as f:
     raw_inspection_info = json.load(f)
     inspection_info = {
         key: value

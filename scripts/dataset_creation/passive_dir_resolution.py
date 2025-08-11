@@ -16,11 +16,13 @@ REDUCTION_METHOD = np.median
 NUM_SUBROIS_YAXIS = 10
 NUM_SUBROIS_XAXIS = 20
 
+import matplotlib
+matplotlib.use('TkAgg')
 
 data = pd.DataFrame()
 
 
-with open('../../data/m2k/inspection_info.json', 'r') as f:
+with open('../inspection_info.json', 'r') as f:
     raw_inspection_info = json.load(f)
     inspection_info = {
         key: value
@@ -68,7 +70,7 @@ for filename in tqdm(inspection_info.keys()):
             col_end = np.searchsorted(alpha_grid, angular_limits[1])
 
             flaw_shot = inspection_info[filename]["flaw_shot"][ith_flaw]
-            inside_flaw_shot = True if (flaw_shot[0] < ith_flaw < flaw_shot[1]) else False
+            inside_flaw_shot = True if (flaw_shot[0] < ith_shot < flaw_shot[1]) else False
 
             sscan_flaw = sscan_envelope[row_beg:row_end, col_beg:col_end]
             flaw_mask = sscan_flaw >= sscan_flaw.max() * thresh

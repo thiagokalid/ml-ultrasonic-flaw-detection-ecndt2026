@@ -39,7 +39,7 @@ def create_annotations(cm_abs, cm_norm):
 PKL_DATA_PATH = "../data/pkl/"
 
 # Useful constants:
-BETA_SCORE_CTE = 1
+BETA_SCORE_CTE = 2
 
 # Chosen model:
 model = "lof"

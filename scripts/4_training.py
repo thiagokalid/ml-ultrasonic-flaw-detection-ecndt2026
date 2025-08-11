@@ -28,7 +28,7 @@ print(f"Train: {len(train_df)} | Test: {len(test_df)} | "
 
 # -- Training:
 # models = ["knn", "iforest"]
-models = ["lof"]
+models = ["knn"]
 for model in models:
     match model:
         case "knn":
@@ -38,7 +38,7 @@ for model in models:
         case "ocsvm":
             clf = OCSVM(kernel='rbf', degree=3, nu=.5, contamination=1/100)
         case "inne":
-            clf = INNE(contamination=1/100, n_estimators=300)
+            clf = INNE(contamination=1/100, n_estimators=100)
         case "lof":
             clf = LOF(n_neighbors=15, novelty=True, contamination=1/100)
         case "hbos":

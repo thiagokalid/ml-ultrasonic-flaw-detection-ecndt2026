@@ -10,7 +10,7 @@ import joblib
 # --- Scikit-learn ---
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
-
+from sklearn.model_selection import train_test_split
 # Data root:
 PKL_DATA_PATH = "../data/pkl/"
 
@@ -61,33 +61,68 @@ def pad_to_shape(arr, target_shape):
 
 # --- Load the dataset ---
 df = pd.read_pickle(PKL_DATA_PATH + 'acoustic_lens_sscan_dataset.pkl')
-
-# Define training mask correctly:
-training_mask = (
-    (
-        (df['filename'].apply(lambda x: x[-6:] != "v2.m2k")) &
-        (df['contain_flaw'] == False)
-        # (df['ith_shot'] >= 40)
-    )
-    |
-    (
-        (df['filename'].apply(lambda x: x[:12] == "passive_dir_")) &
-        (df['contain_flaw'] == False) &
-        (df['filename'].apply(lambda x: x[-6:] != "v2.m2k"))
-        # (df['ith_shot'] <= 5 | (df['ith_shot'] >= 20))
-    )
-    |
-    (df['filename'].apply(lambda x: x[3:8] == "_row_")) &
-    (df['contain_flaw'] == False) &
-    (df['filename'].apply(lambda x: x[-6:] != "v2.m2k"))
-)
-
-# Normalize S-scan:
 df['sub_sscan'] = df['sub_sscan'] / df['sscan_max']
 
-# Extract sets:
-train_df = df[training_mask]
-test_df = df[~training_mask]
+# # Define training mask correctly:
+# training_mask = (
+#     (
+#         (df['filename'].apply(lambda x: x[-6:] != "v2.m2k")) &
+#         (df['contain_flaw'] == False)
+#         # (df['ith_shot'] >= 40)
+#     )
+#     |
+#     (
+#         (df['filename'].apply(lambda x: x[:12] == "passive_dir_")) &
+#         (df['contain_flaw'] == False) &
+#         (df['filename'].apply(lambda x: x[-6:] != "v2.m2k"))
+#         # (df['ith_shot'] <= 5 | (df['ith_shot'] >= 20))
+#     )
+#     |
+#     (df['filename'].apply(lambda x: x[3:8] == "_row_")) &
+#     (df['contain_flaw'] == False) &
+#     (df['filename'].apply(lambda x: x[-6:] != "v2.m2k"))
+# )
+#
+# # Normalize S-scan:
+# df['sub_sscan'] = df['sub_sscan'] / df['sscan_max']
+#
+# # Extract sets:
+# train_df = df[training_mask]
+# test_df = df[~training_mask]
+
+# Load your dataset
+df = pd.read_pickle(PKL_DATA_PATH + 'acoustic_lens_sscan_dataset.pkl')
+df['sub_sscan'] = df['sub_sscan'] / df['sscan_max']
+
+# Separate flaws and non-flaws
+flaws_df = df[df['contain_flaw'] == True]
+non_flaws_df = df[df['contain_flaw'] == False]
+
+# Desired test size including all flaws
+target_test_ratio = 0.20
+
+# Number of samples for test excluding flaws
+total_count = len(df)
+num_flaws = len(flaws_df)
+num_non_flaws_test = max(0, int(target_test_ratio * total_count) - num_flaws)
+
+# Split non-flaws into train/test
+non_flaws_train, non_flaws_test = train_test_split(
+    non_flaws_df,
+    test_size=num_non_flaws_test,
+    random_state=42,
+    shuffle=True
+)
+
+# Combine flaws with test portion of non-flaws
+test_df = pd.concat([flaws_df, non_flaws_test]).reset_index(drop=True)
+train_df = non_flaws_train.reset_index(drop=True)
+
+# Sanity check
+print(f"Train proportion: {len(train_df) / total_count:.2%}")
+print(f"Test proportion:  {len(test_df) / total_count:.2%}")
+print(f"Flaws in train?   {train_df['contain_flaw'].any()}")  # Should be False
+print(f"Flaws in test?    {test_df['contain_flaw'].any()}")   # Should be True
 
 #%%
 # -- PCA features --
@@ -139,17 +174,32 @@ for df, parts, pca_features in zip(
 X_train = pd.concat(X_train_parts, axis=1)
 X_test = pd.concat(X_test_parts, axis=1)
 
-# Align columns in test to match training (some categories might be missing in test set)
-X_test = X_test.reindex(columns=X_train.columns, fill_value=0)
+# Keep feature names before scaling
+feature_names = X_train.columns
 
-# --- Standardize numeric features only ---
+# Align columns in test to match training
+X_test = X_test.reindex(columns=feature_names, fill_value=0)
+
+# --- Standardize ---
 scaler = StandardScaler()
-X_train = scaler.fit_transform(X_train)
-X_test = scaler.transform(X_test)
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
 
-# --- Labels ---
+# Back to DataFrames
+X_train_df = pd.DataFrame(X_train_scaled, columns=feature_names)
+X_test_df = pd.DataFrame(X_test_scaled, columns=feature_names)
+
+# Labels
 y_train = train_df['contain_flaw']
 y_test = test_df['contain_flaw']
+
+# Add split flag
+X_train_df["split"] = "train"
+X_test_df["split"] = "test"
+
+# Combine
+X_combined = pd.concat([X_train_df, X_test_df], ignore_index=True)
+y_combined = pd.concat([y_train, y_test], ignore_index=True)
 
 # %% Save X and y to disk
 joblib.dump(X_train, PKL_DATA_PATH + "X_train.pkl")
@@ -158,3 +208,5 @@ joblib.dump(y_train.to_numpy(), PKL_DATA_PATH + "y_train.pkl")
 joblib.dump(y_test.to_numpy(), PKL_DATA_PATH + "y_test.pkl")
 test_df.to_pickle(PKL_DATA_PATH + "test_df.pkl")
 train_df.to_pickle(PKL_DATA_PATH + "train_df.pkl")
+X_combined.to_pickle(PKL_DATA_PATH + "X_combined.pkl")
+y_test.to_pickle(PKL_DATA_PATH + "y_combined.pkl")

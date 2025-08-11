@@ -1,0 +1,316 @@
+{
+    "passive_dir_0degree_v1.m2k": {
+        "ref_filename": "ref1.m2k",
+        "surface_position": [57.34, 62.25],
+        "number_of_shots": 22,
+        "# flaws": 1,
+        "t_flaw": [[58.5, 60]],
+        "ang_flaw": [[-7, 7]],
+        "flaw_shot": [[8, 11]],
+        "inspection type": "passive sweep rbh"
+    },
+
+    "passive_dir_0degree_v2.m2k": {
+        "ref_filename": "ref1.m2k",
+        "surface_position": [57.34, 62.4],
+        "number_of_shots": 22,
+        "# flaws": 1,
+        "t_flaw": [[58.5, 60]],
+        "ang_flaw": [[-7, 7]],
+        "flaw_shot": [[10, 13]],
+        "inspection type": "passive sweep rbh"
+    },
+
+    "passive_dir_0degree_v3.m2k": {
+        "ref_filename": "ref1.m2k",
+        "surface_position": [57.34, 62.4],
+        "number_of_shots": 22,
+        "# flaws": 1,
+        "t_flaw": [[58.5, 60]],
+        "ang_flaw": [[-7, 7]],
+        "flaw_shot": [[10, 14]],
+        "inspection type": "passive sweep rbh"
+    },
+
+    "passive_dir_10degree_v1.m2k": {
+        "ref_filename": "ref1.m2k",
+        "surface_position": [57.34, 62.25],
+        "number_of_shots": 25,
+        "# flaws": 1,
+        "t_flaw": [[59.2, 59.8]],
+        "ang_flaw": [[10, 13.5]],
+        "flaw_shot": [[10, 14]],
+        "inspection type": "passive sweep rbh"
+    },
+
+    "passive_dir_10degree_v2.m2k": {
+        "ref_filename": "ref1.m2k",
+        "surface_position": [57.34, 62.25],
+        "number_of_shots": 25,
+        "# flaws": 1,
+        "t_flaw": [[59.2, 59.8]],
+        "ang_flaw": [[10, 13.5]],
+        "flaw_shot": [[11, 14]],
+        "inspection type": "passive sweep rbh"
+    },
+
+    "passive_dir_10degree_v3.m2k": {
+        "ref_filename": "ref1.m2k",
+        "surface_position": [57.34, 62.25],
+        "number_of_shots": 25,
+        "# flaws": 1,
+        "t_flaw": [[59.2, 59.8]],
+        "ang_flaw": [[10, 13.5]],
+        "flaw_shot": [[10, 13]],
+        "inspection type": "passive sweep rbh"
+    },
+
+    "passive_dir_20degree_v1.m2k": {
+        "ref_filename": "ref1.m2k",
+        "surface_position": [57.34, 62.25],
+        "number_of_shots": 25,
+        "# flaws": 1,
+        "t_flaw": [[59.2, 59.8]],
+        "ang_flaw": [[15, 22]],
+        "flaw_shot": [[12, 15]],
+        "inspection type": "passive sweep rbh"
+    },
+
+    "passive_dir_20degree_v2.m2k": {
+        "ref_filename": "ref1.m2k",
+        "surface_position": [57.34, 62.25],
+        "number_of_shots": 25,
+        "# flaws": 1,
+        "t_flaw": [[59.2, 59.8]],
+        "ang_flaw": [[15, 22]],
+        "flaw_shot": [[10, 14]],
+        "inspection type": "passive sweep rbh"
+    },
+
+    "passive_dir_20degree_v3.m2k": {
+        "ref_filename": "ref1.m2k",
+        "surface_position": [57.34, 62.25],
+        "number_of_shots": 25,
+        "# flaws": 1,
+        "t_flaw": [[59.2, 59.8]],
+        "ang_flaw": [[15, 22]],
+        "flaw_shot": [[10, 13]],
+        "inspection type": "passive sweep rbh"
+    },
+
+    "passive_dir_30degree_v1.m2k": {
+        "ref_filename": "ref3.m2k",
+        "surface_position": [55, 60.3],
+        "number_of_shots": 25,
+        "# flaws": 2,
+        "t_flaw": [[56, 58], [56, 58]],
+        "ang_flaw": [[-24, -10], [22, 40]],
+        "flaw_shot": [[9, 11], [9, 11]],
+        "inspection type": "passive sweep rbh"
+    },
+
+    "passive_dir_30degree_v2.m2k": {
+        "ref_filename": "ref3.m2k",
+        "surface_position": [55, 60.3],
+        "number_of_shots": 23,
+        "# flaws": 2,
+        "t_flaw": [[56, 58], [56, 58]],
+        "ang_flaw": [[-24, -10], [22, 40]],
+        "flaw_shot": [[13, 15], [13, 15]],
+        "inspection type": "passive sweep rbh"
+    },
+
+    "passive_dir_30degree_v3.m2k": {
+        "ref_filename": "ref3.m2k",
+        "surface_position": [55, 60.3],
+        "number_of_shots": 25,
+        "# flaws": 2,
+        "t_flaw": [[56, 58], [56, 58]],
+        "ang_flaw": [[-24, -10], [22, 40]],
+        "flaw_shot": [[7, 10], [7, 10]],
+        "inspection type": "passive sweep rbh"
+    },
+
+    "passive_dir_34degree_v1.m2k": {
+        "ref_filename": "ref3.m2k",
+        "surface_position": [55, 60.3],
+        "number_of_shots": 24,
+        "# flaws": 2,
+        "t_flaw": [[56.77, 58], [56.77, 58]],
+        "ang_flaw": [[22, 40], [-24, -10]],
+        "flaw_shot": [[11, 15], [10, 13]],
+        "inspection type": "passive sweep rbh"
+    },
+
+    "passive_dir_34degree_v2.m2k": {
+        "ref_filename": "ref3.m2k",
+        "surface_position": [55, 60.3],
+        "number_of_shots": 24,
+        "# flaws": 2,
+        "t_flaw": [[56.77, 58], [56.77, 58]],
+        "ang_flaw": [[22, 40], [-24, -10]],
+        "flaw_shot": [[10, 13], [9, 14]],
+        "inspection type": "passive sweep rbh"
+    },
+
+    "passive_dir_34degree_v3.m2k": {
+        "ref_filename": "ref3.m2k",
+        "surface_position": [55, 60.3],
+        "number_of_shots": 24,
+        "# flaws": 2,
+        "t_flaw": [[56.77, 58], [56.77, 58]],
+        "ang_flaw": [[22, 40], [-24, -10]],
+        "flaw_shot": [[11, 13], [10, 14]]
+    },
+
+    "passive_dir_38.5degree_v1.m2k": {
+        "ref_filename": "ref3.m2k",
+        "surface_position": [55, 60.3],
+        "number_of_shots": 24,
+        "# flaws": 2,
+        "t_flaw": [[56.77, 58], [56.77, 58]],
+        "ang_flaw": [[-24, -10], [22, 40]],
+        "flaw_shot": [[14, 19], [15, 18]],
+        "inspection type": "passive sweep rbh"
+    },
+
+    "passive_dir_38.5degree_v2.m2k": {
+        "ref_filename": "ref3.m2k",
+        "surface_position": [55, 60.3],
+        "number_of_shots": 24,
+        "# flaws": 2,
+        "t_flaw": [[56.77, 58], [56.77, 58]],
+        "ang_flaw": [[-24, -10], [22, 40]],
+        "flaw_shot": [[7, 12], [8, 11]],
+        "inspection type": "passive sweep rbh"
+    },
+
+    "passive_dir_38.5degree_v3.m2k": {
+        "ref_filename": "ref3.m2k",
+        "surface_position": [55, 60.3],
+        "number_of_shots": 24,
+        "# flaws": 2,
+        "t_flaw": [[56.77, 58], [56.77, 58]],
+        "ang_flaw": [[-24, -10], [22, 40]],
+        "flaw_shot": [[12, 17], [13, 16]],
+        "inspection type": "passive sweep rbh"
+    },
+
+    "active_dir_xl_focused_1degree_v1.m2k": {
+        "ref_filename": "ref_xl_focused.m2k",
+        "surface_position": [56.80, 60.90],
+        "t_flaw": [58, 60],
+        "number_of_shots": 44,
+        "inspection type": "active sweep sdh"
+    },
+
+    "active_dir_xl_focused_1degree_v2.m2k": {
+        "ref_filename": "ref_xl_focused.m2k",
+        "surface_position": [56.80, 60.90],
+        "t_flaw": [58, 60],
+        "number_of_shots": 44,
+        "inspection type": "active sweep sdh"
+    },
+
+    "active_dir_xl_focused_1degree_v3.m2k": {
+        "ref_filename": "ref4.m2k",
+        "surface_position": [55.32, 59.36],
+        "t_flaw": [56.5, 58.5],
+        "number_of_shots": 39,
+        "inspection type": "active sweep sdh"
+    },
+
+    "2nd_row_v1.m2k": {
+        "ref_filename": "ref5.m2k",
+        "surface_position": [57.30, 62.20],
+        "number_of_shots": 1,
+        "# flaws": 2,
+        "t_flaw": [[60, 61.5], [60, 61.5]],
+        "ang_flaw": [[-33, -20], [18, 30]],
+        "inspection type": "static rbh"
+    },
+
+    "2nd_row_v2.m2k": {
+        "ref_filename": "ref5.m2k",
+        "surface_position": [57.30, 62.20],
+        "number_of_shots": 1,
+        "# flaws": 2,
+        "t_flaw": [[60, 61.5], [60, 61.2]],
+        "ang_flaw": [[-33, -20], [18, 30]],
+        "inspection type": "static rbh"
+    },
+
+    "2nd_row_v3.m2k": {
+        "ref_filename": "ref5.m2k",
+        "surface_position": [57.30, 62.20],
+        "number_of_shots": 1,
+        "# flaws": 2,
+        "t_flaw": [[60, 61.5], [60, 61.2]],
+        "ang_flaw": [[-33, -20], [18, 30]],
+        "inspection type": "static rbh"
+    },
+
+
+    "3rd_row_v1.m2k": {
+        "ref_filename": "ref5.m2k",
+        "surface_position": [57.30, 62.20],
+        "number_of_shots": 1,
+        "# flaws": 2,
+        "t_flaw": [[58.4, 60.5], [58.4, 60.5]],
+        "ang_flaw": [[-33, -20], [18, 30]],
+        "inspection type": "static rbh"
+    },
+
+    "3rd_row_v2.m2k": {
+        "ref_filename": "ref5.m2k",
+        "surface_position": [57.30, 62.20],
+        "number_of_shots": 1,
+        "# flaws": 2,
+        "t_flaw": [[58.4, 60.5], [58.4, 60.5]],
+        "ang_flaw": [[-33, -20], [18, 30]],
+        "inspection type": "static rbh"
+    },
+
+    "3rd_row_v3.m2k": {
+        "ref_filename": "ref5.m2k",
+        "surface_position": [57.30, 62.20],
+        "number_of_shots": 1,
+        "# flaws": 2,
+        "t_flaw": [[58.4, 60.5], [58.4, 60.5]],
+        "ang_flaw": [[-33, -20], [18, 30]],
+        "inspection type": "static rbh"
+    },
+
+    "ref1.m2k": {
+        "surface_position": [57.30, 62.20],
+        "number_of_shots": 20,
+        "# flaws": 0,
+        "ref_filename": "",
+        "inspection type": "reference no pipe"
+    },
+
+    "ref3.m2k": {
+        "surface_position": [55, 60.3],
+        "number_of_shots": 20,
+        "flaw_idx": [],
+        "ref_filename": "",
+        "inspection type": "reference no pipe"
+    },
+
+    "ref2.m2k": {
+        "surface_position": [57.30, 62.20],
+        "number_of_shots": 20,
+        "# flaws": 0,
+        "ref_filename": "",
+        "inspection type": "reference no pipe"
+    },
+
+    "ref_xl_focused.m2k": {
+        "surface_position": [56.80, 60.90],
+        "number_of_shots": 10,
+        "# flaws": 0,
+        "ref_filename": "",
+        "inspection type": "reference no pipe"
+    }
+}
+

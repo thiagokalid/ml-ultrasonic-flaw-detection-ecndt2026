@@ -12,7 +12,7 @@ DEBUG_PLOT = True
 DATA_ROOT = "../data/m2k/"
 PKL_DATA_PATH = "../data/pkl/"
 LOG_CTE = 1e-6
-model = 'lof'
+model = 'knn'
 REDUCTION_METHOD = np.median
 NUM_SUBROIS_YAXIS = 10
 NUM_SUBROIS_XAXIS = 20
@@ -23,16 +23,16 @@ FILENAME = [
 "3rd_row_v2.m2k",
 "passive_dir_0degree_v2.m2k",
 "passive_dir_10degree_v2.m2k",
-# "passive_dir_20degree_v2.m2k",
-# "passive_dir_30degree_v2.m2k",
-# "passive_dir_34degree_v2.m2k",
-# "passive_dir_38.5degree_v2.m2k",
-# "active_dir_xl_focused_1degree_v1.m2k",
+"passive_dir_20degree_v2.m2k",
+"passive_dir_30degree_v2.m2k",
+"passive_dir_34degree_v2.m2k",
+"passive_dir_38.5degree_v2.m2k",
+"active_dir_xl_focused_1degree_v2.m2k",
 ]
 
 data = pd.DataFrame()
 
-with open('../data/m2k/inspection_info.json', 'r') as f:
+with open('inspection_info.json', 'r') as f:
     inspection_info = json.load(f)
 
 inspection_info = {
