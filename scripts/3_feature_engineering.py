@@ -11,6 +11,8 @@ import joblib
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
+from sklearn.feature_selection import SelectKBest, f_classif
+
 # Data root:
 PKL_DATA_PATH = "../data/pkl/"
 
@@ -99,7 +101,7 @@ flaws_df = df[df['contain_flaw'] == True]
 non_flaws_df = df[df['contain_flaw'] == False]
 
 # Desired test size including all flaws
-target_test_ratio = 0.20
+target_test_ratio = 0.30
 
 # Number of samples for test excluding flaws
 total_count = len(df)
@@ -141,6 +143,38 @@ pca.fit(X_pxs_train)
 # --- Transform both sets ---
 X_pxs_train_pca = pca.transform(X_pxs_train)
 X_pxs_test_pca = pca.transform(X_pxs_test)
+
+#%%
+# -- FFT features --
+# print("FFT before")
+# #
+# X_fft_train = train_df['sub_sscan'].apply(np.fft.fft2)
+# X_fft_test = test_df['sub_sscan'].apply(np.fft.fft2)
+#
+# # --- Find max shape on training set ---
+# max_shape = tuple(np.max([arr.shape for arr in X_fft_train], axis=0))
+#
+# # --- Pad and flatten ---
+# X_fft_train = np.stack(X_fft_train.apply(lambda x: pad_to_shape(x, max_shape).ravel()))
+# X_fft_test = np.stack(X_fft_test.apply(lambda x: pad_to_shape(x, max_shape).ravel()))
+#
+# # --- Fit PCA on training ---
+# pca_real = PCA(n_components=10)
+# pca_real.fit(np.real(X_fft_train))
+#
+# # --- Transform both sets ---
+# X_fft_train_pca_real = pca_real.transform(np.real(X_fft_train))
+# X_fft_test_pca_real = pca_real.transform(np.real(X_fft_test))
+#
+# # --- Fit PCA on training ---
+# pca_imag = PCA(n_components=10)
+# pca_imag.fit(np.imag(X_fft_train))
+#
+# # --- Transform both sets ---
+# X_fft_train_pca_imag = pca_imag.transform(np.imag(X_fft_train))
+# X_fft_test_pca_imag = pca_imag.transform(np.imag(X_fft_test))
+
+
 #%% Select features for training and testing:
 
 X_train_parts, X_test_parts = [], []
@@ -148,7 +182,9 @@ X_train_parts, X_test_parts = [], []
 for df, parts, pca_features in zip(
         [train_df, test_df],
         [X_train_parts, X_test_parts],
-        [X_pxs_train_pca, X_pxs_test_pca]
+        [X_pxs_train_pca, X_pxs_test_pca],
+        # [X_fft_train_pca_real, X_fft_test_pca_real],
+        # [X_fft_train_pca_imag, X_fft_test_pca_imag]
 ):
     # -- One-hot encode subroi_idx --
     subroi_ohe = pd.get_dummies(df['subroi_idx'], prefix='subroi')
@@ -168,6 +204,15 @@ for df, parts, pca_features in zip(
     pca_df = pd.DataFrame(pca_features, index=df.index)
     pca_df.columns = [f"pca_{i}" for i in range(pca_df.shape[1])]
     parts.append(pca_df)
+
+    # -- FFT features --
+    # pca_df = pd.DataFrame(pca_real, index=df.index)
+    # pca_df.columns = [f"pca_real_{i}" for i in range(pca_df.shape[1])]
+    # parts.append(pca_df)
+    #
+    # pca_df = pd.DataFrame(pca_imag, index=df.index)
+    # pca_df.columns = [f"pca_imag_{i}" for i in range(pca_df.shape[1])]
+    # parts.append(pca_df)
 
 
 # --- Concatenate features ---
@@ -200,6 +245,13 @@ X_test_df["split"] = "test"
 # Combine
 X_combined = pd.concat([X_train_df, X_test_df], ignore_index=True)
 y_combined = pd.concat([y_train, y_test], ignore_index=True)
+
+# # -- Select the most meaningful features:
+# selector = SelectKBest(f_classif, k=25)
+# selector.fit(X_train, y_train)
+#
+# X_train = selector.transform(X_train)
+# X_test = selector.transform(X_test)
 
 # %% Save X and y to disk
 joblib.dump(X_train, PKL_DATA_PATH + "X_train.pkl")

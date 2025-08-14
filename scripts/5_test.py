@@ -24,6 +24,8 @@ from sklearn.metrics import (
     recall_score,
     roc_curve, auc
 )
+from sklearn.metrics import roc_curve, auc, precision_recall_curve, average_precision_score
+import matplotlib.pyplot as plt
 
 def create_annotations(cm_abs, cm_norm):
     """Create annotation strings with counts and percentages"""
@@ -39,7 +41,7 @@ def create_annotations(cm_abs, cm_norm):
 PKL_DATA_PATH = "../data/pkl/"
 
 # Useful constants:
-BETA_SCORE_CTE = 2
+BETA_SCORE_CTE = 1
 
 # Chosen model:
 model = "lof"
@@ -170,3 +172,18 @@ plt.legend(loc="lower right")
 plt.grid(True)
 plt.tight_layout()
 plt.show()
+
+#%% Precision–Recall curve
+precision, recall, thresholds = precision_recall_curve(y_test, y_scores)
+ap_score = average_precision_score(y_test, y_scores)
+
+plt.figure(figsize=(6, 6))
+plt.plot(recall, precision, color='green', lw=2, label=f"PR (AP = {ap_score:.2f})")
+plt.xlabel("Recall (Sensitivity)")
+plt.ylabel("Precision")
+plt.title(f"Precision–Recall Curve - {model.upper()}")
+plt.legend(loc="lower left")
+plt.grid(True)
+plt.tight_layout()
+plt.show()
+
