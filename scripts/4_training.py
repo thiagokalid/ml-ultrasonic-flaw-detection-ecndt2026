@@ -3,7 +3,9 @@ import pandas as pd
 import joblib
 import time
 import numpy as np
+from sklearn.metrics import fbeta_score
 from sklearn.model_selection import GridSearchCV
+from sklearn.metrics import fbeta_score, make_scorer
 
 # --- PyOD ---
 from pyod.models.iforest import IForest
@@ -14,81 +16,96 @@ from pyod.models.ocsvm import OCSVM
 from pyod.models.thresholds import CLUST
 from pyod.models.inne import INNE
 from pyod.models.abod import ABOD
-from pyod.models.deep_svdd import DeepSVDD
 from pyod.models.pca import PCA
 from pyod.models.xgbod import XGBOD
-from pyod.models.auto_encoder import AutoEncoder
-from pyod.models.anogan import AnoGAN
+
+CV_GRIDSEARCH = True
+DEFAULT_CONTAMINATION = 1/100
+# SCORING = make_scorer(fbeta_score, beta=3)
+SCORING = "f1"
+
+COMMON_PARAMS_GRID = {
+    "contamination": [.1/100, .5/100, 1/100, 1.5/100, 2/100, 5/100]
+}
+
+MODELS_PARAMS_GRID = {
+    "lof":{
+        "n_neighbors": [2, 5, 10, 15, 20, 25, 30],
+        "p": [1, 2],
+        "novelty": [True],
+        "n_jobs": [-1]
+    },
+    "iforest":{
+        "n_estimators": [25, 50, 100, 200],
+        "n_jobs": [-1],
+        "behaviour": ["new"],
+        "random_state": [42],
+    },
+    "pca":{
+        "n_components": [5, 10, 25, 50, 100],
+    },
+    "hbos":{
+        "n_bins": [2, 5, 10, 15],
+        "alpha": [.05, .1, .2, 1, 2]
+    },
+    # "inne":{
+    #     "n_estimators": [50, 100, 200]
+    # }
+}
 
 # Useful paths:
 PKL_DATA_PATH = "../data/pkl/"
 
 # --- Load the dataset ---
-test_df, train_df = pd.read_pickle(PKL_DATA_PATH + 'test_df.pkl'),  pd.read_pickle(PKL_DATA_PATH + 'train_df.pkl')
-X_test, X_train = joblib.load(PKL_DATA_PATH + "X_test.pkl"), joblib.load(PKL_DATA_PATH + "X_train.pkl")
-y_test, y_train = joblib.load(PKL_DATA_PATH + "y_test.pkl"), joblib.load(PKL_DATA_PATH + "y_train.pkl")
+test_df, validation_df, train_df = pd.read_pickle(PKL_DATA_PATH + 'test_df.pkl'),  pd.read_pickle(PKL_DATA_PATH + 'validation_df.pkl'),  pd.read_pickle(PKL_DATA_PATH + 'train_df.pkl')
+X_test, X_validation, X_train = joblib.load(PKL_DATA_PATH + "X_test.pkl"), joblib.load(PKL_DATA_PATH + "X_validation.pkl"), joblib.load(PKL_DATA_PATH + "X_train.pkl")
+y_test, y_validation, y_train = joblib.load(PKL_DATA_PATH + "y_test.pkl"), joblib.load(PKL_DATA_PATH + "y_validation.pkl"), joblib.load(PKL_DATA_PATH + "y_train.pkl")
 
 print(f"Train: {len(train_df)} | Test: {len(test_df)} | "
       f"X_train: {X_train.shape} | X_test: {X_test.shape} | "
       f"y_train: {y_train.shape} | y_test: {y_test.shape} | "
       f"Test %: {len(test_df) / (len(train_df) + len(test_df)):.1%}")
 
-# -- Training:
-# models = ["knn", "iforest"]
-models = ["lof"]
-for model in models:
+for model in MODELS_PARAMS_GRID.keys():
     match model:
         case "knn":
-            clf = KNN(contamination=1/100, n_neighbors=15)
+            clf = KNN(contamination=DEFAULT_CONTAMINATION, n_neighbors=15)
         case "iforest":
-            clf = IForest(contamination=1/100, n_estimators=200, max_features=1, behaviour='new')
+            clf = IForest(contamination=DEFAULT_CONTAMINATION, n_estimators=100, random_state=42)
         case "ocsvm":
-            clf = OCSVM(kernel='rbf', degree=3, nu=.5, contamination=1/100)
+            clf = OCSVM(contamination=DEFAULT_CONTAMINATION)
         case "inne":
-            clf = INNE(contamination=1/100, n_estimators=100)
+            clf = INNE(contamination=DEFAULT_CONTAMINATION, n_estimators=100)
         case "lof":
-            clf = LOF(n_neighbors=15, novelty=True, contamination=1/100, p=1)
-            param_grid = {
-                'contamination': [1/100, .1/100],
-                'n_neighbors': [10, 15, 30, 45],
-                "p": [1, 2]
-            }
+            clf = LOF(contamination=DEFAULT_CONTAMINATION, p=2, n_neighbors=15, n_jobs=-1)
         case "hbos":
-            clf = HBOS(contamination=1/100, n_bins=10, alpha=0.1, tol=0.5)
+            clf = HBOS(contamination=DEFAULT_CONTAMINATION, n_bins=10)
         case "kmeans":
-            clf = CLUST(method="kmeans")
+            clf = CLUST(contamination=DEFAULT_CONTAMINATION, method="kmeans")
         case "abod":
-            clf = ABOD(contamination=1/100)
-        case "deepsvdd":
-            clf = DeepSVDD(contamination=1/100)
+            clf = ABOD(contamination=DEFAULT_CONTAMINATION)
         case "pca":
-            clf = PCA(n_components=25, contamination=1/100)
+            clf = PCA()
         case "xgbod":
             init_clf = []
             clf = XGBOD(n_jobs=4,learning_rate=0.01 )
-        case "autoencoder":
-            clf = AutoEncoder(contamination=1/100)
-        case "anogan":
-            clf = AnoGAN(contamination=1/100, verbose=1, preprocessing=False)
         case _:
             print(f"Unknown model type: {model}")
             continue
 
-    # Hyperparameter tuning:
-    grid_search = GridSearchCV(clf, param_grid, cv=5, scoring='f1')
-
-    # Fit with hyperparameter tuning
-    grid_search.fit(X_train, y_train)
-
-    # Choose best estimator:
-    clf = grid_search.best_estimator_
-
-    # Train the model:
     print("Training " + model + "...")
     t0 = time.time()
-    clf.fit(X_train, y_train)
+    if not CV_GRIDSEARCH:
+        clf.fit(X_train, y_train)
+    else:
+        search_space = MODELS_PARAMS_GRID[model] | COMMON_PARAMS_GRID
+        cv = GridSearchCV(clf, param_grid=search_space, scoring=SCORING, n_jobs=-1)
+        cv.fit(X_validation, y_validation)
+        clf = cv.best_estimator_
+
     elapsed_time = time.time() - t0
     print(f"Finished training in {elapsed_time:.2f} seconds.")
+
 
     # --- Predict anomalies ---
     print("Testing " + model + "...")
@@ -112,7 +129,9 @@ for model in models:
     tf = time.time() - t0
     print(f"Finished in {tf:.2f} seconds.")
 
-    test_df[y_pred == 1].to_pickle(PKL_DATA_PATH + model + '_anomalies_df.pkl')
+    prediction_df = test_df.copy()
+    prediction_df["y_pred"] = y_pred
+    prediction_df.to_pickle(PKL_DATA_PATH + model + '_prediction_df.pkl')
     joblib.dump(clf, PKL_DATA_PATH + model + '_clf.pkl')
     joblib.dump(y_pred, PKL_DATA_PATH + model + '_y_pred.pkl')
     joblib.dump(y_scores, PKL_DATA_PATH + model + '_y_scores.pkl')
