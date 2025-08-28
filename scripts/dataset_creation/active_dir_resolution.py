@@ -109,7 +109,7 @@ for filename in tqdm(inspection_info.keys()):
                     time_grid[1] - time_grid[0],
                     0.5,
                     ith_shot,
-                    (i - 1) * (len(subroi_yaxis_borders) - 1) + (j - 1),
+                        (i - 1) * (len(subroi_yaxis_borders) - 1) + (j - 1),
                     t_outer,
                     t_inner,
                     sscan_max,

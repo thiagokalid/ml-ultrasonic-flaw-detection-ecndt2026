@@ -13,6 +13,7 @@ from sklearn.metrics import (
 
 # --- Useful paths & constants ---
 PKL_DATA_PATH = "../data/pkl/"
+MODEL_PATH = PKL_DATA_PATH + "models/"
 BETA_SCORE_CTE = 1
 
 # Load dataset once
@@ -20,15 +21,16 @@ X_test = joblib.load(PKL_DATA_PATH + "X_test.pkl")
 y_test = joblib.load(PKL_DATA_PATH + "y_test.pkl")
 
 # Candidate models
-models = ["lof", "hbos", "iforest"]
+# models = ["lof", "iforest", "pca", "hbos"]
+models = ["lof", "iforest"]
 
 # Store results
 results = []
 
 for model in models:
     # Load predictions and scores
-    y_pred = joblib.load(PKL_DATA_PATH + f"{model}_y_pred.pkl")
-    y_scores = joblib.load(PKL_DATA_PATH + f"{model}_y_scores.pkl")
+    y_pred = joblib.load(MODEL_PATH + f"{model}_y_pred.pkl")
+    y_scores = joblib.load(MODEL_PATH + f"{model}_y_scores.pkl")
 
     # Convert prediction to {0,1}
     y_pred = np.where(y_pred > 0, 1, 0)

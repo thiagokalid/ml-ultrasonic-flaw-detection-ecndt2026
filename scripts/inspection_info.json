@@ -160,7 +160,8 @@
         "# flaws": 2,
         "t_flaw": [[56.77, 58], [56.77, 58]],
         "ang_flaw": [[22, 40], [-24, -10]],
-        "flaw_shot": [[11, 13], [10, 14]]
+        "flaw_shot": [[11, 13], [10, 14]],
+        "inspection type": "passive sweep rbh"
     },
 
     "passive_dir_38.5degree_v1.m2k": {

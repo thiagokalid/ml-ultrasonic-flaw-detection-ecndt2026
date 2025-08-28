@@ -11,24 +11,26 @@ PLOT_DATA = True
 DEBUG_PLOT = True
 DATA_ROOT = "../data/m2k/"
 PKL_DATA_PATH = "../data/pkl/"
+MODEL_PATH = PKL_DATA_PATH + "models/"
 LOG_CTE = 1e-6
-model = 'knn'
+model = 'lof'
 REDUCTION_METHOD = np.median
 NUM_SUBROIS_YAXIS = 10
 NUM_SUBROIS_XAXIS = 20
+FILENAME = [
+# "2nd_row_v1.m2k",
+# "3rd_row_v1.m2k",
+"active_dir_xl_focused_1degree_v2.m2k",
+# "passive_dir_0degree_v2.m2k",
+# "passive_dir_10degree_v2.m2k",
+# "passive_dir_20degree_v2.m2k",
+# "passive_dir_30degree_v2.m2k",
+# "passive_dir_34degree_v2.m2k",
+# "passive_dir_38.5degree_v2.m2k",
+
+]
 
 # Test files:
-FILENAME = [
-"2nd_row_v2.m2k",
-"3rd_row_v2.m2k",
-"passive_dir_0degree_v2.m2k",
-"passive_dir_10degree_v2.m2k",
-"passive_dir_20degree_v2.m2k",
-"passive_dir_30degree_v2.m2k",
-"passive_dir_34degree_v2.m2k",
-"passive_dir_38.5degree_v2.m2k",
-"active_dir_xl_focused_1degree_v2.m2k",
-]
 
 data = pd.DataFrame()
 
@@ -41,7 +43,7 @@ inspection_info = {
     if fname in inspection_info
 }
 
-anomaly_df = pd.read_pickle(PKL_DATA_PATH + model + "_anomalies_df.pkl")
+predictions_df = pd.read_pickle(MODEL_PATH + model + "_prediction_df.pkl")
 
 #%%
 plt.ioff()  # Already disables interactive mode
@@ -102,22 +104,30 @@ for fname in FILENAME:
         plt.grid(color='k', alpha=.25)
 
         # --- Plot anomaly bounding boxes ---
-        anomaly_in_insp = anomaly_df["filename"] == fname
-        anomaly_in_shot = anomaly_df["ith_shot"] == curr_shot
-        anomaly_mask = np.logical_and(anomaly_in_insp, anomaly_in_shot)
-        if np.any(anomaly_mask):
-            borders = anomaly_df[anomaly_mask]['sscan_limits']
-            for ii, border in enumerate(borders):
-                (xbeg, xend), (zbeg, zend) = border
-                label = "Anomaly" if ii == 0 else "_"
-                plt.plot(
-                    [xbeg, xend, xend, xbeg, xbeg],
-                    [zbeg, zbeg, zend, zend, zbeg],
-                    color='b',
-                    alpha=0.5,
-                    label=label
-                )
-        plt.legend()
+        current_inspection = predictions_df["filename"] == fname
+        current_shot = predictions_df["ith_shot"] == curr_shot
+        is_anomaly = predictions_df["y_pred"] == 1
+        anomaly_mask = current_inspection & current_shot & is_anomaly
+
+        # mask = (predictions_df["filename"] == "passive_dir_30degree_v1.m2k") & (predictions_df["contain_flaw"] == 1)
+        # predictions_df[mask]["ith_shot"]
+
+
+        # print(np.sum(anomaly_mask))
+
+        # if np.any(anomaly_mask):
+        #     borders = predictions_df[anomaly_mask]['sscan_limits']
+        #     for ii, border in enumerate(borders):
+        #         (xbeg, xend), (zbeg, zend) = border
+        #         label = "Anomaly" if ii == 0 else "_"
+        #         plt.plot(
+        #             [xbeg, xend, xend, xbeg, xbeg],
+        #             [zbeg, zbeg, zend, zend, zbeg],
+        #             color='b',
+        #             alpha=0.5,
+        #             label=label
+        #         )
+        # plt.legend()
 
         # --- Save figure ---
         folder_root = f"../figures/{fname}_inspection"

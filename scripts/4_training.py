@@ -4,8 +4,10 @@ import joblib
 import time
 import numpy as np
 from sklearn.metrics import fbeta_score
-from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import fbeta_score, make_scorer
+from sklearn.model_selection import GridSearchCV
+import json
+
 
 # --- PyOD ---
 from pyod.models.iforest import IForest
@@ -19,10 +21,13 @@ from pyod.models.abod import ABOD
 from pyod.models.pca import PCA
 from pyod.models.xgbod import XGBOD
 
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning)
+
 CV_GRIDSEARCH = True
 DEFAULT_CONTAMINATION = 1/100
 # SCORING = make_scorer(fbeta_score, beta=3)
-SCORING = "f1"
+SCORING = "recall"
 
 COMMON_PARAMS_GRID = {
     "contamination": [.1/100, .5/100, 1/100, 1.5/100, 2/100, 5/100]
@@ -41,13 +46,13 @@ MODELS_PARAMS_GRID = {
         "behaviour": ["new"],
         "random_state": [42],
     },
-    "pca":{
-        "n_components": [5, 10, 25, 50, 100],
-    },
-    "hbos":{
-        "n_bins": [2, 5, 10, 15],
-        "alpha": [.05, .1, .2, 1, 2]
-    },
+    # "pca":{
+    #     "n_components": [5, 10, 25, 50, 100],
+    # },
+    # "hbos":{
+    #     "n_bins": [2, 5, 10, 15],
+    #     "alpha": [.05, .1, .2, 1, 2]
+    # },
     # "inne":{
     #     "n_estimators": [50, 100, 200]
     # }
@@ -55,17 +60,14 @@ MODELS_PARAMS_GRID = {
 
 # Useful paths:
 PKL_DATA_PATH = "../data/pkl/"
+MODEL_PATH = PKL_DATA_PATH + "models/"
 
 # --- Load the dataset ---
 test_df, validation_df, train_df = pd.read_pickle(PKL_DATA_PATH + 'test_df.pkl'),  pd.read_pickle(PKL_DATA_PATH + 'validation_df.pkl'),  pd.read_pickle(PKL_DATA_PATH + 'train_df.pkl')
 X_test, X_validation, X_train = joblib.load(PKL_DATA_PATH + "X_test.pkl"), joblib.load(PKL_DATA_PATH + "X_validation.pkl"), joblib.load(PKL_DATA_PATH + "X_train.pkl")
 y_test, y_validation, y_train = joblib.load(PKL_DATA_PATH + "y_test.pkl"), joblib.load(PKL_DATA_PATH + "y_validation.pkl"), joblib.load(PKL_DATA_PATH + "y_train.pkl")
 
-print(f"Train: {len(train_df)} | Test: {len(test_df)} | "
-      f"X_train: {X_train.shape} | X_test: {X_test.shape} | "
-      f"y_train: {y_train.shape} | y_test: {y_test.shape} | "
-      f"Test %: {len(test_df) / (len(train_df) + len(test_df)):.1%}")
-
+#%% Train different models:
 for model in MODELS_PARAMS_GRID.keys():
     match model:
         case "knn":
@@ -102,6 +104,7 @@ for model in MODELS_PARAMS_GRID.keys():
         cv = GridSearchCV(clf, param_grid=search_space, scoring=SCORING, n_jobs=-1)
         cv.fit(X_validation, y_validation)
         clf = cv.best_estimator_
+        clf.fit(X_train, y_train)
 
     elapsed_time = time.time() - t0
     print(f"Finished training in {elapsed_time:.2f} seconds.")
@@ -110,9 +113,7 @@ for model in MODELS_PARAMS_GRID.keys():
     # --- Predict anomalies ---
     print("Testing " + model + "...")
     t0 = time.time()
-    # y_pred = clf.predict_with_rejection(X_test, T=36, return_stats=False, delta=0.1, c_fp=1, c_fn=1, c_r=-1) # 0 = normal, 1 = anomaly (pyod uses this convention)
     y_pred = clf.predict(X_test)
-    # print("Number of rejections: ", np.count_nonzero(y_pred == -2))
     tf = time.time() - t0
     print(f"Finished in {tf:.2f} seconds.")
 
@@ -131,10 +132,10 @@ for model in MODELS_PARAMS_GRID.keys():
 
     prediction_df = test_df.copy()
     prediction_df["y_pred"] = y_pred
-    prediction_df.to_pickle(PKL_DATA_PATH + model + '_prediction_df.pkl')
-    joblib.dump(clf, PKL_DATA_PATH + model + '_clf.pkl')
-    joblib.dump(y_pred, PKL_DATA_PATH + model + '_y_pred.pkl')
-    joblib.dump(y_scores, PKL_DATA_PATH + model + '_y_scores.pkl')
+    prediction_df.to_pickle(MODEL_PATH + model + '_prediction_df.pkl')
+    joblib.dump(clf, MODEL_PATH + model + '_clf.pkl')
+    joblib.dump(y_pred, MODEL_PATH + model + '_y_pred.pkl')
+    joblib.dump(y_scores, MODEL_PATH + model + '_y_scores.pkl')
 
 
 

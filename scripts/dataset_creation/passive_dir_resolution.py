@@ -58,8 +58,7 @@ for filename in tqdm(inspection_info.keys()):
         subroi_xaxis_borders = np.linspace(-45, 45, NUM_SUBROIS_XAXIS)
         subroi_yaxis_borders = np.linspace(t_outer, t_inner, NUM_SUBROIS_YAXIS)
 
-        global_mask = np.zeros_like(sscan_envelope, dtype=bool)
-
+        global_mask = [np.zeros_like(sscan_envelope, dtype=bool) for _ in range(number_of_flaws)]
         for ith_flaw in range(number_of_flaws):
             angular_limits = inspection_info[filename]["ang_flaw"][ith_flaw]
             time_limits = inspection_info[filename]["t_flaw"][ith_flaw]
@@ -74,7 +73,7 @@ for filename in tqdm(inspection_info.keys()):
 
             sscan_flaw = sscan_envelope[row_beg:row_end, col_beg:col_end]
             flaw_mask = sscan_flaw >= sscan_flaw.max() * thresh
-            global_mask[row_beg:row_end, col_beg:col_end] |= flaw_mask * inside_flaw_shot
+            global_mask[ith_flaw][row_beg:row_end, col_beg:col_end] |= flaw_mask * inside_flaw_shot
 
 
         # Now loop over sub-ROIs:
@@ -92,15 +91,18 @@ for filename in tqdm(inspection_info.keys()):
                 sub_sscan = sscan_envelope[t_start_idx:t_end_idx, a_start_idx:a_end_idx]
 
                 flattened_idx = (i - 1) * (len(subroi_yaxis_borders) - 1) + (j - 1)
-                roi_mask = global_mask[t_start_idx:t_end_idx, a_start_idx:a_end_idx]
 
-                if np.any(roi_mask):
-                    total_pxs = np.sum(global_mask)
-                    subroi_pxs = np.sum(roi_mask)
+                for ith_flaw in range(number_of_flaws):
+                    roi_mask = global_mask[ith_flaw][t_start_idx:t_end_idx, a_start_idx:a_end_idx]
 
-                    contain_flaw = (subroi_pxs / total_pxs) > 0.1
-                else:
-                    contain_flaw = False
+                    if np.any(roi_mask):
+                        total_pxs = np.sum(global_mask)
+                        subroi_pxs = np.sum(roi_mask)
+
+                        contain_flaw = (subroi_pxs / total_pxs) > 0.1
+
+                    else:
+                        contain_flaw = False
 
                 row = (
                     filename,
