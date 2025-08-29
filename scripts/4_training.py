@@ -1,3 +1,6 @@
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning)
+
 # === Third-party libraries ===
 import pandas as pd
 import joblib
@@ -7,6 +10,7 @@ from sklearn.metrics import fbeta_score
 from sklearn.metrics import fbeta_score, make_scorer
 from sklearn.model_selection import GridSearchCV
 import json
+from tqdm import tqdm
 
 
 # --- PyOD ---
@@ -21,16 +25,15 @@ from pyod.models.abod import ABOD
 from pyod.models.pca import PCA
 from pyod.models.xgbod import XGBOD
 
-import warnings
-warnings.filterwarnings("ignore", category=UserWarning)
+
 
 CV_GRIDSEARCH = True
 DEFAULT_CONTAMINATION = 1/100
 # SCORING = make_scorer(fbeta_score, beta=3)
-SCORING = "recall"
+SCORING = "f1"
 
 COMMON_PARAMS_GRID = {
-    "contamination": [.1/100, .5/100, 1/100, 1.5/100, 2/100, 5/100]
+    "contamination": [.1/100, .5/100, 1/100, 1.5/100, 2/100, 3/100]
 }
 
 MODELS_PARAMS_GRID = {
@@ -68,7 +71,7 @@ X_test, X_validation, X_train = joblib.load(PKL_DATA_PATH + "X_test.pkl"), jobli
 y_test, y_validation, y_train = joblib.load(PKL_DATA_PATH + "y_test.pkl"), joblib.load(PKL_DATA_PATH + "y_validation.pkl"), joblib.load(PKL_DATA_PATH + "y_train.pkl")
 
 #%% Train different models:
-for model in MODELS_PARAMS_GRID.keys():
+for model in tqdm(MODELS_PARAMS_GRID.keys()):
     match model:
         case "knn":
             clf = KNN(contamination=DEFAULT_CONTAMINATION, n_neighbors=15)

@@ -20,12 +20,12 @@ NUM_SUBROIS_XAXIS = 20
 FILENAME = [
 # "2nd_row_v1.m2k",
 # "3rd_row_v1.m2k",
-"active_dir_xl_focused_1degree_v2.m2k",
+# "active_dir_xl_focused_1degree_v2.m2k",
 # "passive_dir_0degree_v2.m2k",
 # "passive_dir_10degree_v2.m2k",
 # "passive_dir_20degree_v2.m2k",
-# "passive_dir_30degree_v2.m2k",
-# "passive_dir_34degree_v2.m2k",
+"passive_dir_30degree_v2.m2k",
+"passive_dir_34degree_v2.m2k",
 # "passive_dir_38.5degree_v2.m2k",
 
 ]
@@ -34,7 +34,7 @@ FILENAME = [
 
 data = pd.DataFrame()
 
-with open('inspection_info.json', 'r') as f:
+with open('../data/configs/inspection_info.json', 'r') as f:
     inspection_info = json.load(f)
 
 inspection_info = {
@@ -105,7 +105,7 @@ for fname in FILENAME:
 
         # --- Plot anomaly bounding boxes ---
         current_inspection = predictions_df["filename"] == fname
-        current_shot = predictions_df["ith_shot"] == curr_shot
+        current_shot = predictions_df["shot"] == curr_shot
         is_anomaly = predictions_df["y_pred"] == 1
         anomaly_mask = current_inspection & current_shot & is_anomaly
 
@@ -115,19 +115,20 @@ for fname in FILENAME:
 
         # print(np.sum(anomaly_mask))
 
-        # if np.any(anomaly_mask):
-        #     borders = predictions_df[anomaly_mask]['sscan_limits']
-        #     for ii, border in enumerate(borders):
-        #         (xbeg, xend), (zbeg, zend) = border
-        #         label = "Anomaly" if ii == 0 else "_"
-        #         plt.plot(
-        #             [xbeg, xend, xend, xbeg, xbeg],
-        #             [zbeg, zbeg, zend, zend, zbeg],
-        #             color='b',
-        #             alpha=0.5,
-        #             label=label
-        #         )
-        # plt.legend()
+        if np.any(anomaly_mask):
+            borders = predictions_df[anomaly_mask]['subroi_limits']
+            for ii, border in enumerate(borders):
+                (xbeg, xend), (zbeg, zend) = border
+                xbeg, xend = np.degrees(xbeg), np.degrees(xend)
+                label = "Anomaly" if ii == 0 else "_"
+                plt.plot(
+                    [xbeg, xend, xend, xbeg, xbeg],
+                    [zbeg, zbeg, zend, zend, zbeg],
+                    color='b',
+                    alpha=0.5,
+                    label=label
+                )
+        plt.legend()
 
         # --- Save figure ---
         folder_root = f"../figures/{fname}_inspection"

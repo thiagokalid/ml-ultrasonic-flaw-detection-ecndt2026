@@ -62,8 +62,7 @@ def pad_to_shape(arr, target_shape):
 
 
 # --- Load the dataset ---
-df = pd.read_pickle(PKL_DATA_PATH + 'acoustic_lens_sscan_dataset.pkl')
-df['sub_sscan'] = df['sub_sscan'] / df['sscan_max']
+df = pd.read_pickle(PKL_DATA_PATH + 'dataset_annotated.pkl')
 
 # # Define training mask correctly:
 # training_mask = (
@@ -92,8 +91,6 @@ df['sub_sscan'] = df['sub_sscan'] / df['sscan_max']
 # train_df = df[training_mask]
 # test_df = df[~training_mask]
 
-# Load your dataset
-df = pd.read_pickle(PKL_DATA_PATH + 'acoustic_lens_sscan_dataset.pkl')
 print(len(df))
 # df['sub_sscan'] = df['sub_sscan'] / df['sscan_max']
 
@@ -209,7 +206,7 @@ for df, parts, pca_features, X_fft in zip(
     # -- Statistical features --
     for operation in [np.mean, np.std, np.max, np.min, np.ptp, np.median]:
         operation_name = operation.__name__
-        operation_db = lambda x: np.log10(operation(x) + 1e-6)
+        operation_db = lambda x: operation(x)
         parts.append(df['sub_sscan'].apply(operation_db).to_frame(name=operation_name))
 
     # -- Wavelet features --
