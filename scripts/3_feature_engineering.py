@@ -11,13 +11,15 @@ import joblib
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
-from sklearn.feature_selection import SelectKBest, f_classif
+
+# --- Scikit-image ---
+from skimage.feature import graycomatrix, graycoprops
 
 # Data root:
 PKL_DATA_PATH = "../data/pkl/"
 
 # --- Parameters ---
-N_PCA_COMPONENTS = 20  # e.g., reduce angle dimension to 5
+N_PCA_COMPONENTS = 50  # e.g., reduce angle dimension to 5
 BETA_SCORE_CTE = 1
 
 # -- Wavelet feature extractor from a 2D array --
@@ -64,36 +66,8 @@ def pad_to_shape(arr, target_shape):
 # --- Load the dataset ---
 df = pd.read_pickle(PKL_DATA_PATH + 'dataset_annotated.pkl')
 
-# # Define training mask correctly:
-# training_mask = (
-#     (
-#         (df['filename'].apply(lambda x: x[-6:] != "v2.m2k")) &
-#         (df['contain_flaw'] == False)
-#         # (df['ith_shot'] >= 40)
-#     )
-#     |
-#     (
-#         (df['filename'].apply(lambda x: x[:12] == "passive_dir_")) &
-#         (df['contain_flaw'] == False) &
-#         (df['filename'].apply(lambda x: x[-6:] != "v2.m2k"))
-#         # (df['ith_shot'] <= 5 | (df['ith_shot'] >= 20))
-#     )
-#     |
-#     (df['filename'].apply(lambda x: x[3:8] == "_row_")) &
-#     (df['contain_flaw'] == False) &
-#     (df['filename'].apply(lambda x: x[-6:] != "v2.m2k"))
-# )
-#
-# # Normalize S-scan:
-# df['sub_sscan'] = df['sub_sscan'] / df['sscan_max']
-#
-# # Extract sets:
-# train_df = df[training_mask]
-# test_df = df[~training_mask]
-
 print(len(df))
-# df['sub_sscan'] = df['sub_sscan'] / df['sscan_max']
-
+total_count = len(df)
 TRAINING_METHOD = "Semi-supervised"
 if TRAINING_METHOD == "Semi-supervised":
     # Separate flaws and non-flaws
@@ -104,7 +78,7 @@ if TRAINING_METHOD == "Semi-supervised":
     target_test_ratio = 0.30
 
     # Number of samples for test excluding flaws
-    total_count = len(df)
+
     num_flaws = len(flaws_df)
     num_non_flaws_test = max(0, int(target_test_ratio * total_count) - num_flaws)
 
@@ -119,16 +93,7 @@ if TRAINING_METHOD == "Semi-supervised":
     test_df = pd.concat([flaws_df, non_flaws_test]).reset_index(drop=True)
     train_df = non_flaws_train.reset_index(drop=True)
 
-    # print(len(train_df))
-    # print(len(test_df))
-    # print(len(train_df) + len(test_df))
-    #
-    # # Sanity check
-    # print(f"Train proportion: {len(train_df) / total_count:.2%}")
-    # print(f"Test proportion:  {len(test_df) / total_count:.2%}")
-    # print(f"Flaws in train?   {train_df['contain_flaw'].any()}")  # Should be False
-    # print(f"Flaws in test?    {test_df['contain_flaw'].any()}")  # Should be True
-elif TRAINING_METHOD == "Supervised":
+elif TRAINING_METHOD == "Unsupervised":
     train_df, test_df = train_test_split(df, test_size=.3)
 else:
     raise ValueError("Invalid TRAINING_METHOD")
@@ -147,9 +112,6 @@ max_shape = tuple(np.max([arr.shape for arr in train_df['sub_sscan']], axis=0))
 X_pxs_train = np.stack(train_df['sub_sscan'].apply(lambda x: pad_to_shape(x, max_shape).ravel()))
 X_pxs_test = np.stack(test_df['sub_sscan'].apply(lambda x: pad_to_shape(x, max_shape).ravel()))
 
-# X_pxs_train = np.log10(X_pxs_train + 1E-6)
-# X_pxs_test = np.log10(X_pxs_test + 1E-6)
-
 # --- Fit PCA on training ---
 pca = PCA(n_components=N_PCA_COMPONENTS)
 pca.fit(X_pxs_train)
@@ -160,33 +122,9 @@ X_pxs_test_pca = pca.transform(X_pxs_test)
 
 #%%
 # -- FFT features --
-# print("FFT before")
 
 X_fft_train = train_df['sub_sscan'].apply(np.fft.fft2)
 X_fft_test = test_df['sub_sscan'].apply(np.fft.fft2)
-
-# # --- Find max shape on training set ---
-# max_shape = tuple(np.max([arr.shape for arr in X_fft_train], axis=0))
-#
-# # --- Pad and flatten ---
-# X_fft_train = np.stack(X_fft_train.apply(lambda x: pad_to_shape(x, max_shape).ravel()))
-# X_fft_test = np.stack(X_fft_test.apply(lambda x: pad_to_shape(x, max_shape).ravel()))
-#
-# # --- Fit PCA on training ---
-# pca_real = PCA(n_components=10)
-# pca_real.fit(np.real(X_fft_train))
-#
-# # --- Transform both sets ---
-# X_fft_train_pca_real = pca_real.transform(np.real(X_fft_train))
-# X_fft_test_pca_real = pca_real.transform(np.real(X_fft_test))
-#
-# # --- Fit PCA on training ---
-# pca_imag = PCA(n_components=10)
-# pca_imag.fit(np.imag(X_fft_train))
-#
-# # --- Transform both sets ---
-# X_fft_train_pca_imag = pca_imag.transform(np.imag(X_fft_train))
-# X_fft_test_pca_imag = pca_imag.transform(np.imag(X_fft_test))
 
 
 #%% Select features for training and testing:
@@ -209,25 +147,10 @@ for df, parts, pca_features, X_fft in zip(
         operation_db = lambda x: operation(x)
         parts.append(df['sub_sscan'].apply(operation_db).to_frame(name=operation_name))
 
-    # -- Wavelet features --
-    # wavelet_features = np.stack(df['sub_sscan'].apply(extract_wavelet_features_2d))
-    # wavelet_df = pd.DataFrame(wavelet_features, index=df.index)
-    # wavelet_df.columns = [f"wavelet_{i}" for i in range(wavelet_df.shape[1])]
-    # parts.append(wavelet_df)
-
     # -- PCA features --
     pca_df = pd.DataFrame(pca_features, index=df.index)
     pca_df.columns = [f"pca_{i}" for i in range(pca_df.shape[1])]
     parts.append(pca_df)
-
-    # -- FFT features --
-    # pca_df = pd.DataFrame(pca_real, index=df.index)
-    # pca_df.columns = [f"pca_real_{i}" for i in range(pca_df.shape[1])]
-    # parts.append(pca_df)
-    #
-    # pca_df = pd.DataFrame(pca_imag, index=df.index)
-    # pca_df.columns = [f"pca_imag_{i}" for i in range(pca_df.shape[1])]
-    # parts.append(pca_df)
 
     # -- FFT Features --
     for operation in [np.mean, np.median, np.argmax, np.argmin]:
@@ -235,8 +158,10 @@ for df, parts, pca_features, X_fft in zip(
         operation_abs = lambda x: operation(np.abs(x))
         parts.append(X_fft.apply(operation_abs).to_frame(name="fft_abs_" + operation_name))
 
-        # operation_phase = lambda x: operation(np.angle(x))
-        # parts.append(X_fft.apply(operation_phase).to_frame(name="fft_phase_" + operation_name))
+    # -- Image descriptors --
+    glcm = df['sub_sscan'].apply(lambda patch: graycomatrix(patch, distances=[], angles=[], levels=[], symmetric=True, normed=True))
+    parts.append(graycoprops(glcm, 'dissimilarity')[0, 0])
+    parts.append(graycoprops(glcm, 'correlation')[0, 0])
 
 
 # --- Concatenate features ---
