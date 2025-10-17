@@ -5,8 +5,7 @@ __pycache__/
 *.npy
 
 # Data / Results
-data/
-figures/
+data
 *.pkl
 *.m2k
 
