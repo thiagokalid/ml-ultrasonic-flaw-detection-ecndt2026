@@ -1,6 +1,7 @@
 import json
 import pandas as pd
 from datetime import datetime
+from skimage.feature import hog
 from utils import *
 
 M2K_PATH = "../data/m2k/"
@@ -9,9 +10,11 @@ PKL_PATH = "../data/pkl/"
 ANOTATION_PATH = "../data/imgs_anotated/"
 
 PROCESSING_PARAMS = {
-    "subtraction": False,
-    "reduction_method": "median",
-    "scale": "log",
+    "subtraction": False, # "true" or "false"
+    "reduction_method": "median", # "sum" or "median"
+    "scale": "linear", # "linear" or "log"
+    "envelope": True, # true or false
+    "normalize": "None", # "minmax", "hw_gain", and "None"
 }
 
 DEFAULT_M2K_CONFIG = {
@@ -36,7 +39,7 @@ if __name__ == "__main__":
 
     # Data-structure to be converted into dataframe later:
     DATAFRAME_HEADER = ["filename", "delta_t", "delta_ang", "shot", "subroi_idx", "t_outer", "t_inner", "sscan_max", "contain_flaw",
-                        "subroi_limits", "sub_sscan"]
+                        "subroi_limits", "sub_sscan", "sub_sscan_hog"]
     df_rows = {key_: [] for key_ in DATAFRAME_HEADER}
 
     # Hard-coded angle span based on used delay-law:
@@ -59,6 +62,7 @@ if __name__ == "__main__":
 
         for shot in range(number_of_shots):
             data_insp = file_m2k.read(M2K_PATH + filename, sel_shots=shot, *DEFAULT_M2K_CONFIG)
+            hw_gain_db = data_insp.inspection_params.gain_hw
             time_grid = data_insp.time_grid[:, 0]
 
             reduction_method = get_reduction_method(PROCESSING_PARAMS["reduction_method"])
@@ -76,14 +80,27 @@ if __name__ == "__main__":
             sscan = reduction_method(channels, axis=-1)
 
             # Apply (or not) image enhancement techniques:
-            sscan = apply_preprocessing(sscan, envelope=True, normalize=True)
+            sscan = apply_preprocessing(sscan, envelope=PROCESSING_PARAMS["envelope"], normalize=PROCESSING_PARAMS["normalize"], hw_gain_db=hw_gain_db)
 
             # Apply (or not) different scale:
             sscan = apply_scale(sscan, PROCESSING_PARAMS["scale"])
 
+            #
+            sscan_hog = hog(
+                sscan,
+                orientations=8,
+                pixels_per_cell=(32, 16),
+                cells_per_block=(1, 1),
+                feature_vector=None,
+                visualize=True,
+                channel_axis=None,
+            )[1]
+            # plt.imshow(np.log10(sscan + 1E-6), aspect='auto', cmap="grey")
+            # plt.imshow(hog_sscan, aspect='auto', cmap="grey", vmax=150)
+
             # Split the sscan into differente regions of interest and append to df rows:
             split_sscan2subrois(
-                df_rows, sscan, shot, time_grid, alpha_grid, t_outer, t_inner, SUBROI_PARAMS)
+                df_rows, sscan, shot, time_grid, alpha_grid, t_outer, t_inner, SUBROI_PARAMS, sscan_hog)
             df_rows["filename"].extend(number_of_subrois * [filename])
 
             # Update progress counter

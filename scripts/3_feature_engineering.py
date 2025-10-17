@@ -158,11 +158,6 @@ for df, parts, pca_features, X_fft in zip(
         operation_abs = lambda x: operation(np.abs(x))
         parts.append(X_fft.apply(operation_abs).to_frame(name="fft_abs_" + operation_name))
 
-    # -- Image descriptors --
-    glcm = df['sub_sscan'].apply(lambda patch: graycomatrix(patch, distances=[], angles=[], levels=[], symmetric=True, normed=True))
-    parts.append(graycoprops(glcm, 'dissimilarity')[0, 0])
-    parts.append(graycoprops(glcm, 'correlation')[0, 0])
-
 
 # --- Concatenate features ---
 X_train = pd.concat(X_train_parts, axis=1)

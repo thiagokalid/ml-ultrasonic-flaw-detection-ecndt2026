@@ -32,7 +32,7 @@ matplotlib.use('TkAgg')
 data = pd.DataFrame()
 
 
-with open('inspection_info.json', 'r') as f:
+with open('../data/configs/inspection_info.json', 'r') as f:
     inspection_info = json.load(f)
 
 
@@ -98,4 +98,4 @@ for filename, ith_shot in tqdm(
 
     # Save as 16-bit PNG
     # im = Image.fromarray(img)
-    im_resized.save(os.path.join(SAVE_DIR, f"{filename}_shot{ith_shot}_flaw{int(has_flaw)}.png"))
+    im_resized.save(os.path.join(SAVE_DIR, f"{filename}_shot{ith_shot:04}_flaw{int(has_flaw)}.png"))

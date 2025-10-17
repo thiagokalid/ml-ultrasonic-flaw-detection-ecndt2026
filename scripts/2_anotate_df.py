@@ -62,18 +62,17 @@ if __name__ == "__main__":
 
         if len(df_selected) > 0:
             file_info = insp_info[m2k_filename]
-
-            # Extract outer and inner surface temporal position:
             t_outer, t_inner = file_info["surface_position"]
-
-            data_insp = file_m2k.read(M2K_PATH + m2k_filename, sel_shots=0, *DEFAULT_M2K_CONFIG)
+            data_insp = file_m2k.read(M2K_PATH + m2k_filename, read_ascan=False, *DEFAULT_M2K_CONFIG)
             time_grid = data_insp.time_grid[:, 0]
 
-            df.loc[selection, "contain_flaw"] = mark_subsscans(df_selected, mask, time_grid, alpha_grid, t_outer, t_inner,
-                                                           SUBROI_PARAMS)
+            new_flags = mark_subsscans(df_selected, mask, time_grid, alpha_grid, t_outer, t_inner, SUBROI_PARAMS)
+            df.loc[selection, "contain_flaw"] = df.loc[selection, "contain_flaw"].fillna(0) + new_flags
+
         else:
             pass
 
+    df.loc[df["contain_flaw"] >= 1, "contain_flaw"] = 1
     df.loc[df["contain_flaw"] != 1, "contain_flaw"] = 0
 
     # Convert to dataframe:

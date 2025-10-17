@@ -3,17 +3,24 @@ import math
 
 # === Third-party libraries ===
 import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
 import pandas as pd
 import joblib
 from sklearn.metrics import (
     accuracy_score, balanced_accuracy_score,
     precision_score, recall_score, fbeta_score,
-    confusion_matrix, roc_auc_score, average_precision_score
+    confusion_matrix, roc_auc_score, average_precision_score,
+    roc_curve, ConfusionMatrixDisplay
 )
+from datetime import datetime
+
+from scripts.utils import make_confusion_matrix
 
 # --- Useful paths & constants ---
 PKL_DATA_PATH = "../data/pkl/"
 MODEL_PATH = PKL_DATA_PATH + "models/"
+PLOT_CONFUSION_MATRIX = True
 BETA_SCORE_CTE = 1
 
 # Load dataset once
@@ -21,12 +28,12 @@ X_test = joblib.load(PKL_DATA_PATH + "X_test.pkl")
 y_test = joblib.load(PKL_DATA_PATH + "y_test.pkl")
 
 # Candidate models
-# models = ["lof", "iforest", "pca", "hbos"]
-models = ["lof", "iforest"]
+models = ["lof", 'iforest', 'hbos', 'inne']
+# models = ["lof", "iforest", "pca", "hbos", "inne", "cblof"]
 
 # Store results
 results = []
-
+roc_curves = {}
 for model in models:
     # Load predictions and scores
     y_pred = joblib.load(MODEL_PATH + f"{model}_y_pred.pkl")
@@ -53,6 +60,9 @@ for model in models:
     roc_auc = roc_auc_score(y_test, y_scores)
     ap_score = average_precision_score(y_test, y_scores)
 
+    fpr, tpr, _ = roc_curve(y_test, y_scores)
+    roc_curves[model] = (fpr, tpr, roc_auc)
+
     # Append row
     results.append({
         "Model": model,
@@ -68,10 +78,49 @@ for model in models:
         "AP Score": ap_score
     })
 
-# Convert to DataFrame
+    if PLOT_CONFUSION_MATRIX:
+        make_confusion_matrix(cm, group_names=["Normal", "Anomaly"], categories=["Normal (0)", "Anomaly (1)"], cbar=False)
+        plt.savefig(f"../figures/{model}_confusion_matrix.png")
+
+    # Convert to DataFrame
 results_df = pd.DataFrame(results)
 
 pd.set_option("display.max_columns", None)  # show all columns
 pd.set_option("display.width", None)       # don't wrap to next line
 pd.set_option("display.max_colwidth", None)  # show full column content
-print(results_df.round(4))
+df_str = results_df.round(3).to_string(index=False)
+print(df_str)
+
+# Create timestamped filename
+timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+filename = f"results_{timestamp}.txt"
+
+# Save to txt
+with open(filename, "w") as f:
+    f.write(df_str)
+
+print(f"Saved as {filename}")
+
+
+#%% === Plot ROC AUC curves for all models ===
+plt.figure(figsize=(7 * .8, 6 * .8))
+i = 0
+colors = ["k", "#FF1F5B", "#009ADE", "#AF58BA", "#FFC61E"]
+for model, (fpr, tpr, roc_auc) in roc_curves.items():
+    if model == "lof":
+        alpha = 1
+    else:
+        alpha = .5
+    plt.plot(fpr, tpr, color=colors[i], lw=3, label=f"{model} (AUC = {roc_auc:.3f})", alpha=alpha)
+    i += 1
+
+plt.plot([0, 1], [0, 1], 'k--', lw=1, label="Random Guess")
+plt.xlabel("False Positive Rate")
+plt.ylabel("True Positive Rate")
+plt.title("Characteristic Operational do Receptor (ROC) Curves")
+plt.legend(loc="lower right")
+plt.grid(alpha=0.3)
+plt.tight_layout()
+
+plt.savefig("../figures/roc_curves.png", dpi=300)
+plt.show()
