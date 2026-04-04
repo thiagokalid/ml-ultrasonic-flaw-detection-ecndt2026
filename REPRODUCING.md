@@ -52,7 +52,7 @@ Each script is assigned a number before its name; the number dictates the order
 that you must follow when running them. An alternative is running `/scripts/main.py`
 that executes all scripts in the proper order. 
 
-If, instead, you can execute the pre-trained model available at the Zenodo repository. 
+We also made the pre-trained models publicly available on the Zenodo repository. 
 Under these circumstances, you can start from the `/5_test.py` (included) to generate all
 figures presented in the paper.
 
