@@ -3,11 +3,13 @@ import pandas as pd
 from datetime import datetime
 from skimage.feature import hog
 from utils import *
+from pathlib import Path
 
-M2K_PATH = "../data/m2k/"
-CONFIGS_PATH = "../data/configs/"
-PKL_PATH = "../data/pkl/"
-ANOTATION_PATH = "../data/imgs_anotated/"
+DATA_ROOT = Path("../data")
+M2K_PATH = DATA_ROOT / "m2k"
+CONFIGS_PATH = DATA_ROOT / "configs"
+PKL_PATH = DATA_ROOT / "pkl"
+ANNOTATION_PATH = DATA_ROOT / "imgs_annotated"
 
 PROCESSING_PARAMS = {
     "subtraction": False, # "true" or "false"
@@ -61,7 +63,7 @@ if __name__ == "__main__":
         number_of_shots = file_info["number_of_shots"]
 
         for shot in range(number_of_shots):
-            data_insp = file_m2k.read(M2K_PATH + filename, sel_shots=shot, *DEFAULT_M2K_CONFIG)
+            data_insp = file_m2k.read(M2K_PATH / filename, sel_shots=shot, *DEFAULT_M2K_CONFIG)
             hw_gain_db = data_insp.inspection_params.gain_hw
             time_grid = data_insp.time_grid[:, 0]
 
@@ -95,8 +97,6 @@ if __name__ == "__main__":
                 visualize=True,
                 channel_axis=None,
             )[1]
-            # plt.imshow(np.log10(sscan + 1E-6), aspect='auto', cmap="grey")
-            # plt.imshow(hog_sscan, aspect='auto', cmap="grey", vmax=150)
 
             # Split the sscan into differente regions of interest and append to df rows:
             split_sscan2subrois(
@@ -115,4 +115,4 @@ if __name__ == "__main__":
 
     # Convert to dataframe:
     df = pd.DataFrame(df_rows)
-    df.to_pickle(PKL_PATH + "dataset" + ".pkl")
+    df.to_pickle(PKL_PATH / "dataset.pkl")

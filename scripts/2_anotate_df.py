@@ -5,10 +5,11 @@ import re
 import cv2
 from tqdm import tqdm
 
-M2K_PATH = "../data/m2k/"
-CONFIGS_PATH = "../data/configs/"
-PKL_PATH = "../data/pkl/"
-ANOTATION_PATH = "../data/imgs_anotated/"
+DATA_ROOT = Path("../data")
+M2K_PATH = DATA_ROOT / "m2k"
+CONFIGS_PATH = DATA_ROOT / "configs"
+PKL_PATH = DATA_ROOT / "pkl"
+ANNOTATION_PATH = DATA_ROOT / "imgs_annotated"
 
 DEFAULT_M2K_CONFIG = {
     "freq_transd":5,
@@ -23,20 +24,20 @@ SUBROI_PARAMS = {
 }
 
 if __name__ == "__main__":
-    df = pd.read_pickle(PKL_PATH + "dataset.pkl")
+    df = pd.read_pickle(PKL_PATH / "dataset.pkl")
 
     # Hard-coded angle span based on used delay-law:
     alpha_grid = np.radians(np.arange(-45, 45 + .5, .5))
 
     # Read anotations:
-    with open(ANOTATION_PATH + f"/_annotations.coco.json", "r") as f:
+    with open(ANNOTATION_PATH / "/_annotations.coco.json", "r") as f:
         annotations_insp = json.load(f)
     id_to_info = {img["id"]: img for img in annotations_insp["images"]}
 
     SSCAN_SIZE = (1875, 181)
 
     # Read data from these acquisitions:
-    with open(CONFIGS_PATH + f"/inspection_info.json", "r") as f:
+    with open(CONFIGS_PATH / "/inspection_info.json", "r") as f:
         insp_info = json.load(f)
     filename_list = insp_info.keys()
     filename_list = [list(filename_list)[0]]
@@ -76,4 +77,4 @@ if __name__ == "__main__":
     df.loc[df["contain_flaw"] != 1, "contain_flaw"] = 0
 
     # Convert to dataframe:
-    df.to_pickle(PKL_PATH + "dataset_annotated" + ".pkl")
+    df.to_pickle(PKL_PATH / "dataset_annotated.pkl")
