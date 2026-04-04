@@ -1,9 +1,9 @@
 [project]
-name = "ultrasound-defect-outlier-detection"
+name = "ml-ultrasonic-flaw-detection-ecndt2026"
 version = "0.1.0"
 description = "."
 authors = [
-    { name = "Thiago Kalid", email = "thiagokkalid@gmail.com" },
+    { name = "Thiago E. Kalid", email = "thiagokkalid@gmail.com" },
 ]
 license = { file = "MIT" }
 readme = "README.md"
