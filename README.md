@@ -18,7 +18,7 @@ This repository contains the data and source code used to produce the results pr
 |                              | Info |
 |------------------------------|------|
 | Version of record            |   [``]()   |
-| Open-access preprint on SSRN |   [``]()   | 
+| Open-access preprint |   [``]()   | 
 | Archive of this repository   |   [`https:/doi.org/10.5281/zenodo.19410832`](https:/doi.org/10.5281/zenodo.19410832)   | 
 | Reproducing our results | [`REPRODUCING.md`](REPRODUCING.md) |
 
