@@ -1,4 +1,5 @@
 scikit-learn
+scikit-image
 seaborn
 numpy
 matplotlib
@@ -8,3 +9,4 @@ pandas
 mini-auspex
 joblib
 PyWavelets
+opencv-python
