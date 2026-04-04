@@ -1,4 +1,4 @@
-# Machine learning–driven flaw detection for ultrasonic pipe inspections with acoustic lens
+# Machine learning–driven flaw detection for ultrasonic pipe inspections with acoustic lens (ENCDT 2026)
 
 by 
 [Thiago E. Kalid](https://orcid.org/0000-0002-2035-5349),
