@@ -19,14 +19,13 @@ REDUCTION_METHOD = np.median
 NUM_SUBROIS_YAXIS = 10
 NUM_SUBROIS_XAXIS = 20
 FILENAME = [
-# "TuboNovo_260shots.m2k",
-#     "passive_dir_0degree_v2.m2k",
-#     "passive_dir_10degree_v2.m2k",
-#     "passive_dir_20degree_v2.m2k",
-#     "passive_dir_30degree_v2.m2k",
-#     "passive_dir_34degree_v2.m2k",
-#     "passive_dir_38.5degree_v2.m2k"
-    "passive_dir_sweep_bh_v2.m2k"
+    # "TuboNovo_260shots.m2k",
+    "passive_dir_0degree_v2.m2k",
+    # "passive_dir_10degree_v2.m2k",
+    # "passive_dir_20degree_v2.m2k",
+    # "passive_dir_30degree_v2.m2k",
+    # "passive_dir_34degree_v2.m2k",
+    # "passive_dir_sweep_bh_v2.m2k"
     # "active_dir_xl_focused_1degree_v1.m2k"
 ]
 
@@ -38,6 +37,7 @@ inspection_info = {fname: inspection_info[fname] for fname in FILENAME if fname 
 # Load predictions and scores
 predictions_df = pd.read_pickle(MODEL_PATH + model + "_prediction_df_show.pkl")
 y_scores = joblib.load(MODEL_PATH + model + "_y_scores_show.pkl")
+y_combined = joblib.load(PKL_DATA_PATH + "y_combined.pkl")
 
 plt.ioff()  # Disable interactive mode
 
@@ -49,6 +49,8 @@ for fname in FILENAME:
     subroi_yaxis_borders = np.linspace(t_outer, t_inner, NUM_SUBROIS_YAXIS)
 
     for curr_shot in tqdm(range(num_shots), desc=f"Processing {fname}"):
+        # --- Prepare heatmap from scores ---
+        current_mask = (predictions_df["filename"] == fname) & (predictions_df["shot"] == curr_shot)
 
         # --- Retrieve data ---
         data_insp = file_m2k.read(
@@ -242,14 +244,15 @@ for fname in FILENAME:
             f"{y:.1f}" if i % 2 == 0 else "" for i, y in enumerate(subroi_yaxis_borders)
         ])
         #%%
-
-
-        # --- Save figure ---
-        folder_root = f"../figures/{fname}_inspection"
-        os.makedirs(folder_root, exist_ok=True)
         plt.tight_layout()
-        plt.savefig(f"{folder_root}/img_{curr_shot:02d}.png", dpi=300)
-        plt.close(fig)
+        plt.show(block=True)
+
+        # # --- Save figure ---
+        # folder_root = f"../figures/{fname}_inspection"
+        # os.makedirs(folder_root, exist_ok=True)
+        # plt.tight_layout()
+        # plt.savefig(f"{folder_root}/img_{curr_shot:02d}.png", dpi=300)
+        # plt.close(fig)
 
 plt.ion()
 plt.close('all')

@@ -39,7 +39,7 @@ from pyod.models.kpca import KPCA
 
 CV_GRIDSEARCH = False
 PREDICT_WITH_REJECTION = True
-DEFAULT_CONTAMINATION = 2/100
+DEFAULT_CONTAMINATION = 7/100
 # SCORING = make_scorer(fbeta_score, beta=2)
 SCORING = "f1"
 
@@ -50,19 +50,19 @@ COMMON_PARAMS_GRID = {
 MODELS_PARAMS_GRID = {
     "lof":{
         "n_neighbors": [10, 15, 20, 25],
-        "p": [2],
+        "p": [1],
         "novelty": [True],
         "n_jobs": [-1]
     },
-    # "iforest":{
-    #     "n_estimators": [25, 50, 100, 200],
-    #     "n_jobs": [-1],
-    #     "behaviour": ["new"],
-    #     "random_state": [42],
-    # },
-    # "ocsvm":{
-    #     "kernel":['rbf', 'linear'],
-    # },
+    "iforest":{
+        "n_estimators": [25, 50, 100, 200],
+        "n_jobs": [-1],
+        "behaviour": ["new"],
+        "random_state": [42],
+    },
+    "ocsvm":{
+        "kernel":['linear'],
+    },
     # "hbos":{
     #     "n_bins": [2, 5, 10, 15],
     #     "alpha": [.05, .1, .2, 1, 2]
@@ -150,8 +150,8 @@ for model in tqdm(MODELS_PARAMS_GRID.keys()):
         y_pred_val = clf.predict_with_rejection(X_validation, T=32, delta=.05)
         y_pred_val[y_pred_val == -2] = 0
 
-        y_pred_test = clf.predict_with_rejection(X_test, T=32, delta=.05)
-        y_pred_test[y_pred_test == -2] = 0
+        y_pred_train = clf.predict_with_rejection(X_train, T=32, delta=.05)
+        y_pred_train[y_pred_train == -2] = 0
     else:
         y_pred = clf.predict(X_test)
 
@@ -167,7 +167,7 @@ for model in tqdm(MODELS_PARAMS_GRID.keys()):
 
         y_scores_val = clf.decision_function(X_validation)
 
-        y_scores_test = clf.decision_function(X_test)
+        y_scores_train = clf.decision_function(X_train)
     # elif hasattr(clf, "decis2*exp(-32)ion_scores_"):
     #     y_scores = clf.decision_scores_
     #
@@ -194,13 +194,13 @@ for model in tqdm(MODELS_PARAMS_GRID.keys()):
     prediction_val_df = validation_df.copy()
     prediction_val_df["y_pred"] = y_pred_val
 
-    prediction_test_df = test_df.copy()
-    prediction_test_df["y_pred"] = y_pred_test
+    prediction_train_df = train_df.copy()
+    prediction_train_df["y_pred"] = y_pred_train
 
 
-    predictions_df_show = pd.concat([prediction_df, prediction_val_df, prediction_test_df], axis=0, ignore_index=True)
-    y_scores_show = np.concatenate((y_scores, y_scores_val, y_scores_test), axis=0)
-    y_pred_show = np.concatenate((y_pred, y_pred_val, y_pred_test), axis=0)
+    predictions_df_show = pd.concat([prediction_df, prediction_val_df, prediction_train_df], axis=0, ignore_index=True)
+    y_scores_show = np.concatenate((y_scores, y_scores_val, y_scores_train), axis=0)
+    y_pred_show = np.concatenate((y_pred, y_pred_val, y_pred_train), axis=0)
 
     predictions_df_show.to_pickle(MODEL_PATH + model + '_prediction_df_show.pkl')
     joblib.dump(y_pred_show, MODEL_PATH + model + '_y_pred_show.pkl')

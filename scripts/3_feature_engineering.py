@@ -1,10 +1,6 @@
-# === Standard library ===
-import math
-
 # === Third-party libraries ===
 import numpy as np
 import pandas as pd
-import pywt
 import joblib
 
 # --- Scikit-learn ---
@@ -12,8 +8,6 @@ from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 
-# --- Scikit-image ---
-from skimage.feature import graycomatrix, graycoprops
 
 # Data root:
 PKL_DATA_PATH = "../data/pkl/"
@@ -21,39 +15,6 @@ PKL_DATA_PATH = "../data/pkl/"
 # --- Parameters ---
 N_PCA_COMPONENTS = 50  # e.g., reduce angle dimension to 5
 BETA_SCORE_CTE = 1
-
-# -- Wavelet feature extractor from a 2D array --
-def extract_wavelet_features_2d(image, wavelet='sym4', level=2):
-    coeffs = pywt.wavedec2(image, wavelet=wavelet, level=level)
-    features = []
-
-    def compute_features(subband):
-        flat = subband.ravel()
-        # energy = np.sum(flat ** 2)
-        # mean_val = np.mean(flat)
-        # std_val = np.std(flat)
-        # power = np.abs(flat) ** 2
-        # power_sum = np.sum(power)
-        # ent = entropy(power / power_sum) if power_sum != 0 else 0
-
-        energy = np.sum(flat ** 2)
-        l1_norm = np.max(np.sum(np.abs(subband), axis=0))
-        f_norm = np.mean(np.abs(subband)**2)**(1/2)
-        delta_norm = np.max(np.abs(subband))
-
-        return [l1_norm, f_norm]
-
-    # LL (approximation)
-    features.extend(compute_features(coeffs[0]))
-
-    # Detail subbands at each level: (LH, HL, HH)
-    for (cH, cV, cD) in coeffs[1:]:
-        features.extend(compute_features(cH))
-        features.extend(compute_features(cV))
-        features.extend(compute_features(cD))
-
-    return np.array(features)
-
 
 # --- Function to pad arrays to target shape ---
 def pad_to_shape(arr, target_shape):
@@ -97,9 +58,6 @@ elif TRAINING_METHOD == "Unsupervised":
     train_df, test_df = train_test_split(df, test_size=.3)
 else:
     raise ValueError("Invalid TRAINING_METHOD")
-
-# Combine flaws with test portion of non-flaws
-
 
 
 #%%
@@ -197,13 +155,6 @@ X_validation_df["split"] = "validation"
 X_combined = pd.concat([X_train_df, X_test_df, X_validation_df], ignore_index=True)
 y_combined = pd.concat([y_train, y_test, y_validation], ignore_index=True)
 
-# # -- Select the most meaningful features:
-# selector = SelectKBest(f_classif, k=len(X_train.columns) - 5)
-# selector.fit(X_train, y_train)
-#
-# X_train = selector.transform(X_train)
-# X_test = selector.transform(X_test)
-
 # %% Print dataset info:
 n_samples = len(y_combined)
 
@@ -230,4 +181,4 @@ test_df.to_pickle(PKL_DATA_PATH + "test_df.pkl")
 train_df.to_pickle(PKL_DATA_PATH + "train_df.pkl")
 validation_df.to_pickle(PKL_DATA_PATH + "validation_df.pkl")
 X_combined.to_pickle(PKL_DATA_PATH + "X_combined.pkl")
-y_test.to_pickle(PKL_DATA_PATH + "y_combined.pkl")
+y_combined.to_pickle(PKL_DATA_PATH + "y_combined.pkl")
