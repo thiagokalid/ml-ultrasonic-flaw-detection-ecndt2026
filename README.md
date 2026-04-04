@@ -19,7 +19,7 @@ This repository contains the data and source code used to produce the results pr
 |------------------------------|------|
 | Version of record            |   [`https://doi.org/10.1016/j.ndteint.2025.103459`](https://doi.org/10.1016/j.ndteint.2025.103459)   |
 | Open-access preprint on SSRN |   [`https://dx.doi.org/10.2139/ssrn.5224648`](https://dx.doi.org/10.2139/ssrn.5224648)   | 
-| Archive of this repository   |   [`https://doi.org/10.5281/zenodo.15411689`](https:/doi.org/10.5281/zenodo.19410832)   | 
+| Archive of this repository   |   [`https:/doi.org/10.5281/zenodo.19410832`](https:/doi.org/10.5281/zenodo.19410832)   | 
 | Reproducing our results | [`REPRODUCING.md`](REPRODUCING.md) |
 
 ## Abstract
