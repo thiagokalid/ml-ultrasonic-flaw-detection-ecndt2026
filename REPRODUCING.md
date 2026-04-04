@@ -9,8 +9,8 @@ git clone https://github.com/thiagokalid/ml-ultrasonic-flaw-detection-ecndt2026.
 
 or downloading a zip archive from the provided DOI in the `README.md`.
 
-All source code used to generate the results and figures in the paper are in
-the `scripts` folder. There you can find the `.py` scripts that perform the calculations and generate the
+All source code used to generate the results and figures in the paper is in
+the `scripts` folder. There, you can find the `.py` scripts that perform the calculations and generate the
 figures and results presented in the paper. 
 
 All the generated figures are stored in `figures` folder in `.pdf` or `.png` format.
@@ -22,7 +22,7 @@ The data required to generate the results are available at the Zenodo [repositor
 You'll need a working Python 3 environment with all packages described in `requirements.txt` or `pyproject.toml`.
 
 Instead of manually installing them, they can all be automatically installed
-using a virtual environments (venv):
+using a virtual environment (venv):
 
 1. Inside the cloned repository (or an unzipped version), create a new virtual by
    ```
@@ -46,15 +46,22 @@ using a virtual environments (venv):
 
 ## Generating the results from the paper
 
-All results and their associated figures are created by the Python scripts inside the
-`scripts` folder. Each script is named after the correspondent figure numbering presented in the
-paper manuscript. By running the correspondent script, a new figure will be generated under the `figures`. Since all 
-figures presented in the paper were previously generated and uploaded to the remote repository that you just cloned,
-it might appear that there wasn't a new file. Some scripts might take a while to run and a good amount of RAM,
-so be aware.
+All results and their associated figures are created by the notebooks in the
+`scripts` folder. To generate results from scratch, you must run all scripts. 
+Each script is assigned a number before its name; the number dictates the order
+that you must follow when running them. An alternative is running `/scripts/main.py`
+that executes all scripts in the proper order. 
+
+If, instead, you can execute the pre-trained model available at the Zenodo repository. 
+Under these circumstances, you can start from the `/5_test.py` (included) to generate all
+figures presented in the paper.
+
+After running the scripts, new figures will be generated in the `figures` folder. Since all 
+figures presented in the paper were previously generated and updated to the repo, it might
+appear that there wasn't a new file. Some scripts might take a while to run and
+require a good amount of RAM, so be aware.
 
 With the environment activated, run each script by:
 
 ```
 python3 scripts/script_name.py
-```
