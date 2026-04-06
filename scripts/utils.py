@@ -335,3 +335,55 @@ def make_confusion_matrix(cf,
 
     if title:
         plt.title(title)
+
+
+def plot_tiles_labels(mask_, limits_, ax, lw, color, label, alpha=1, ang_in_degrees=True):
+    if np.any(mask_):
+        # ---- 1) Collect boxes (convert to degrees only for x) ----
+        boxes = []
+        for (xbeg, xend), (zbeg, zend) in limits_:
+            if ang_in_degrees:
+                boxes.append([xbeg, xend, zbeg, zend])
+            else:
+                boxes.append([np.degrees(xbeg), np.degrees(xend), zbeg, zend])
+
+        boxes = np.array(boxes)  # shape (N, 4)
+
+        # ---- 2) Sort by xbeg for stable merging ----
+        boxes = boxes[np.argsort(boxes[:, 0])]
+
+        # ---- 3) Merge neighbors (touching or overlapping intervals) ----
+        merged = []
+        cur = boxes[0].copy()
+
+        for box in boxes[1:]:
+            xbeg, xend, zbeg, zend = box
+
+            # If boxes overlap or touch in BOTH x and z:
+            touch_x = xbeg <= cur[1]  # overlapping/touching x-range
+            touch_z = not (zend < cur[2] or zbeg > cur[3])  # overlapping/touching z-range
+
+            if touch_x and touch_z:
+                # Expand current merged box
+                cur[0] = min(cur[0], xbeg)
+                cur[1] = max(cur[1], xend)
+                cur[2] = min(cur[2], zbeg)
+                cur[3] = max(cur[3], zend)
+            else:
+                merged.append(cur.copy())
+                cur = box.copy()
+
+        merged.append(cur)  # don't forget last one
+
+        # ---- 4) Plot merged boxes ----
+        for i, (xbeg, xend, zbeg, zend) in enumerate(merged):
+            label_ = label if i == 0 else "_"
+
+            ax.plot(
+                [xbeg, xend, xend, xbeg, xbeg],
+                [zbeg, zbeg, zend, zend, zbeg],
+                color=color,
+                alpha=alpha,
+                label=label_,
+                lw=lw,
+            )

@@ -22,7 +22,7 @@ DATA_PATH = Path("../data/")
 DATASET_PATH = DATA_PATH / "dataset"
 MODELS_PATH = DATA_PATH / "models"
 PLOT_CONFUSION_MATRIX = True
-BETA_SCORE_CTE = 2
+BETA_SCORE_CTE = 1
 
 # Load dataset once
 X_test = joblib.load(DATASET_PATH / "X_test.pkl")

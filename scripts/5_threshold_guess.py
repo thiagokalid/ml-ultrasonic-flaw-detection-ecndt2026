@@ -2,6 +2,7 @@
 import pandas as pd
 import joblib
 import numpy as np
+import time
 from pathlib import Path
 
 
@@ -11,14 +12,24 @@ DATASET_PATH = DATA_PATH / "dataset"
 MODELS_PATH = DATA_PATH / "models"
 model = 'threshold'
 
+
+
 # --- Load the dataset ---
 dataset = pd.read_pickle(DATASET_PATH / 'dataset.pkl')
 test_df, validation_df, train_df = pd.read_pickle(DATASET_PATH / 'test_df.pkl'),  pd.read_pickle(DATASET_PATH / 'validation_df.pkl'),  pd.read_pickle(DATASET_PATH / 'train_df.pkl')
 X_test, X_validation, X_train = joblib.load(DATASET_PATH / "X_test.pkl"), joblib.load(DATASET_PATH / "X_validation.pkl"), joblib.load(DATASET_PATH / "X_train.pkl")
 y_test, y_validation, y_train = joblib.load(DATASET_PATH / "y_test.pkl"), joblib.load(DATASET_PATH / "y_validation.pkl"), joblib.load(DATASET_PATH / "y_train.pkl")
 
+elapsed_time_seconds = {
+    "train": 0.,
+    "test": 0.,
+    "number_of_test_samples": len(X_test),
+    "number_of_train_samples": len(X_train),
+}
+
 validation_df['y_pred'] = 0
 
+t0 = time.time()
 for file in dataset["filename"].unique():
 
     file_mask = dataset["filename"] == file
@@ -41,6 +52,7 @@ y_pred_test = np.array([
     np.count_nonzero(x > t) >= 0.01 * len(x)
     for x, t in zip(test_df["tiles"].to_numpy(), threshold_test)
 ])
+elapsed_time_seconds["test"] = time.time() - t0
 
 y_pred_val = np.array([
     np.count_nonzero(x > t) >= 0.01 * len(x)

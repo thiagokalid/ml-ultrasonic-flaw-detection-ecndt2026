@@ -45,7 +45,7 @@ from pyod.models.kpca import KPCA
 
 CV_GRIDSEARCH = False
 PREDICT_WITH_REJECTION = True
-DEFAULT_CONTAMINATION = 6/100
+DEFAULT_CONTAMINATION = 2/100
 # SCORING = make_scorer(fbeta_score, beta=2)
 SCORING = "f1"
 
@@ -223,7 +223,7 @@ for ith_model, model in enumerate(MODELS_PARAMS_GRID.keys()):
     predictions_df_show.to_pickle(MODELS_PATH / model / 'prediction_df_show.pkl')
     joblib.dump(y_pred_show, MODELS_PATH / model / 'y_pred_show.pkl')
     joblib.dump(y_scores_show, MODELS_PATH / model / 'y_scores_show.pkl')
-    with open("elapsed_time.json", "w") as f:
+    with open(MODELS_PATH / model / "elapsed_time.json", "w") as f:
         json.dump(curr_elapsed_time, f, indent=4)
 
 
