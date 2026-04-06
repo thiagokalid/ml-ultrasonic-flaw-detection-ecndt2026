@@ -62,22 +62,22 @@ def get_annotation_insp(annotations_insp, filename, shot):
         print(m)
 
 
-def split_sscan2subrois(df_rows, sscan: np.ndarray, shot, time_grid: np.ndarray, alpha_grid: np.ndarray, t_outer, t_inner, params, sscan_hog=None) -> None:
-    NUM_SUBROIS_XAXIS = params["num_subrois_xaxis"]
-    NUM_SUBROIS_ZAXIS = params["num_subrois_zaxis"]
+def split_sscan2tiles(df_rows, sscan: np.ndarray, shot, time_grid: np.ndarray, alpha_grid: np.ndarray, t_outer, t_inner, params) -> None:
+    NUM_TILES_XAXIS = params["num_tiles_xaxis"]
+    NUM_TILES_ZAXIS = params["num_tiles_zaxis"]
 
     # Splitting the S-scan into smallers S-scans:
-    subroi_xaxis_borders = np.linspace(alpha_grid.min(), alpha_grid.max(), NUM_SUBROIS_XAXIS)
-    subroi_yaxis_borders = np.linspace(t_outer, t_inner, NUM_SUBROIS_ZAXIS)
+    tiles_xaxis_borders = np.linspace(alpha_grid.min(), alpha_grid.max(), NUM_TILES_XAXIS)
+    tiles_yaxis_borders = np.linspace(t_outer, t_inner, NUM_TILES_ZAXIS)
 
     sscan_max = sscan.max()
 
-    for i in range(1, len(subroi_xaxis_borders)):
-        for j in range(1, len(subroi_yaxis_borders)):
-            x_start, x_end = subroi_xaxis_borders[i - 1], subroi_xaxis_borders[i]
-            y_start, y_end = subroi_yaxis_borders[j - 1], subroi_yaxis_borders[j]
+    for i in range(1, len(tiles_xaxis_borders)):
+        for j in range(1, len(tiles_yaxis_borders)):
+            x_start, x_end = tiles_xaxis_borders[i - 1], tiles_xaxis_borders[i]
+            y_start, y_end = tiles_yaxis_borders[j - 1], tiles_yaxis_borders[j]
 
-            sscan_limits = [(x_start, x_end), (y_start, y_end)]
+            tiles_limits = [(x_start, x_end), (y_start, y_end)]
 
             # Safe indexing
             t_start_idx = np.searchsorted(time_grid, y_start)
@@ -85,8 +85,8 @@ def split_sscan2subrois(df_rows, sscan: np.ndarray, shot, time_grid: np.ndarray,
             a_start_idx = np.searchsorted(alpha_grid, x_start)
             a_end_idx = np.searchsorted(alpha_grid, x_end)
 
-            sub_sscan = sscan[t_start_idx:t_end_idx, a_start_idx:a_end_idx]
-            subroi_idx = (i - 1) * (len(subroi_yaxis_borders) - 1) + (j - 1)
+            tiles = sscan[t_start_idx:t_end_idx, a_start_idx:a_end_idx]
+            tiles_idx = (i - 1) * (len(tiles_yaxis_borders) - 1) + (j - 1)
 
 
 
@@ -94,39 +94,35 @@ def split_sscan2subrois(df_rows, sscan: np.ndarray, shot, time_grid: np.ndarray,
             df_rows["delta_t"].append(time_grid[1] - time_grid[0])
             df_rows["delta_ang"].append(alpha_grid[1] - alpha_grid[0])
             df_rows["shot"].append(shot)
-            df_rows["subroi_idx"].append(subroi_idx)
+            df_rows["tiles_idx"].append(tiles_idx)
             df_rows["t_outer"].append(t_outer)
             df_rows["t_inner"].append(t_inner)
             df_rows["sscan_max"].append(sscan_max)
             df_rows["contain_flaw"].append(np.nan)
-            df_rows["subroi_limits"].append(sscan_limits)
-            df_rows["sub_sscan"].append(sub_sscan)
+            df_rows["tiles_limits"].append(tiles_limits)
+            df_rows["tiles"].append(tiles)
 
-            if sscan_hog is not None:
-                df_rows["sub_sscan_hog"].append(sscan_hog[t_start_idx:t_end_idx, a_start_idx:a_end_idx])
-            else:
-                df_rows["sub_sscan_hog"].append(None)
 
     return None
 
-def mark_subsscans(df, mask_resized, time_grid, alpha_grid, t_outer, t_inner, params, thresh=1/100):
-    NUM_SUBROIS_XAXIS = params["num_subrois_xaxis"]
-    NUM_SUBROIS_ZAXIS = params["num_subrois_zaxis"]
+def mark_tiles(df, mask_resized, time_grid, alpha_grid, t_outer, t_inner, params, thresh=1/100):
+    NUM_TILES_XAXIS = params["num_tiles_xaxis"]
+    NUM_TILES_ZAXIS = params["num_tiles_zaxis"]
 
     # Splitting the S-scan into smallers S-scans:
-    subroi_xaxis_borders = np.linspace(alpha_grid.min(), alpha_grid.max(), NUM_SUBROIS_XAXIS)
-    subroi_yaxis_borders = np.linspace(t_outer, t_inner, NUM_SUBROIS_ZAXIS)
+    tiles_xaxis_borders = np.linspace(alpha_grid.min(), alpha_grid.max(), NUM_TILES_XAXIS)
+    tiles_yaxis_borders = np.linspace(t_outer, t_inner, NUM_TILES_ZAXIS)
 
     flaw_size = np.sum(mask_resized)
 
-    number_of_subrois = (params["num_subrois_xaxis"] - 1) * (params["num_subrois_zaxis"] - 1)
+    number_of_tiles = (params["num_tiles_xaxis"] - 1) * (params["num_tiles_zaxis"] - 1)
 
-    has_flaw = np.zeros(number_of_subrois)
+    has_flaw = np.zeros(number_of_tiles)
 
-    for i in range(1, len(subroi_xaxis_borders)):
-        for j in range(1, len(subroi_yaxis_borders)):
-            x_start, x_end = subroi_xaxis_borders[i - 1], subroi_xaxis_borders[i]
-            y_start, y_end = subroi_yaxis_borders[j - 1], subroi_yaxis_borders[j]
+    for i in range(1, len(tiles_xaxis_borders)):
+        for j in range(1, len(tiles_yaxis_borders)):
+            x_start, x_end = tiles_xaxis_borders[i - 1], tiles_xaxis_borders[i]
+            y_start, y_end = tiles_yaxis_borders[j - 1], tiles_yaxis_borders[j]
 
             # Safe indexing
             t_start_idx = np.searchsorted(time_grid, y_start)
@@ -140,9 +136,94 @@ def mark_subsscans(df, mask_resized, time_grid, alpha_grid, t_outer, t_inner, pa
             #     plt.figure()
             #     plt.imshow(cropped_mask, aspect='auto')
 
-            subroi_idx = (i - 1) * (len(subroi_yaxis_borders) - 1) + (j - 1)
-            has_flaw[df["subroi_idx"] == subroi_idx] = (has_flaw[df["subroi_idx"] == subroi_idx]) or (np.sum(cropped_mask) > (flaw_size * thresh))
+            tile_idx = (i - 1) * (len(tiles_yaxis_borders) - 1) + (j - 1)
+            has_flaw[df["tiles_idx"] == tile_idx] = (has_flaw[df["tiles_idx"] == tile_idx]) or (np.sum(cropped_mask) > (flaw_size * thresh))
     return has_flaw
+
+
+def sscan2tiles(sscan, time_grid, alpha_grid, t_outer, t_inner, NUM_TILES_XAXIS, NUM_TILES_ZAXIS):
+
+    # Splitting the S-scan into smallers S-scans:
+    tiles_xaxis_borders = np.linspace(alpha_grid.min(), alpha_grid.max(), NUM_TILES_XAXIS)
+    tiles_yaxis_borders = np.linspace(t_outer, t_inner, NUM_TILES_ZAXIS)
+
+    sscan_tiles = []
+    tiles_idx = []
+    limits = []
+    for i in range(1, len(tiles_xaxis_borders)):
+        for j in range(1, len(tiles_yaxis_borders)):
+            x_start, x_end = tiles_xaxis_borders[i - 1], tiles_xaxis_borders[i]
+            y_start, y_end = tiles_yaxis_borders[j - 1], tiles_yaxis_borders[j]
+
+            tile_limits = [(x_start, x_end), (y_start, y_end)]
+
+            # Safe indexing
+            t_start_idx = np.searchsorted(time_grid, y_start)
+            t_end_idx = np.searchsorted(time_grid, y_end)
+            a_start_idx = np.searchsorted(alpha_grid, x_start)
+            a_end_idx = np.searchsorted(alpha_grid, x_end)
+
+            tile = sscan[t_start_idx:t_end_idx, a_start_idx:a_end_idx]
+            tile_idx = (i - 1) * (len(tiles_yaxis_borders) - 1) + (j - 1)
+            sscan_tiles.append(tile)
+            tiles_idx.append(tile_idx)
+            limits.append(tile_limits)
+    return sscan_tiles, np.array(tiles_idx), limits
+
+import numpy as np
+
+def tiles2sscan(
+    tiles,
+    time_grid,
+    alpha_grid,
+    t_outer,
+    t_inner,
+    NUM_TILES_XAXIS,
+    NUM_TILES_ZAXIS,
+):
+    """
+    Reconstructs the S-scan from its patches as produced by sscan2patches().
+    Uses the same grid partitioning and searchsorted logic.
+    """
+
+    # Create empty reconstruction
+    full_sscan = np.zeros((len(time_grid), len(alpha_grid)))
+    weight = np.zeros_like(full_sscan)
+
+    # Re-create the same splitting boundaries
+    tiles_xaxis_borders = np.linspace(alpha_grid.min(), alpha_grid.max(), NUM_TILES_XAXIS)
+    tiles_yaxis_borders = np.linspace(t_outer, t_inner,      NUM_TILES_ZAXIS)
+
+    tile_idx = 0
+
+    # Loop in the same order as sscan2patches
+    for i in range(1, len(tiles_xaxis_borders)):
+        for j in range(1, len(tiles_yaxis_borders)):
+
+            # Same x/y ranges
+            x_start, x_end = tiles_xaxis_borders[i - 1], tiles_xaxis_borders[i]
+            y_start, y_end = tiles_yaxis_borders[j - 1], tiles_yaxis_borders[j]
+
+            # Safe indexing (same as original)
+            t_start_idx = np.searchsorted(time_grid, y_start)
+            t_end_idx   = np.searchsorted(time_grid, y_end)
+            a_start_idx = np.searchsorted(alpha_grid, x_start)
+            a_end_idx   = np.searchsorted(alpha_grid, x_end)
+
+            tile = tiles[tile_idx]
+            tile_idx += 1
+
+            # Insert tile back to full matrix
+            full_sscan[t_start_idx:t_end_idx, a_start_idx:a_end_idx] += tile
+            weight[t_start_idx:t_end_idx, a_start_idx:a_end_idx] += 1
+
+    # Avoid division by zero
+    weight[weight == 0] = 1
+
+    # If there were overlaps, average them
+    full_sscan /= weight
+
+    return full_sscan
 
 
 def make_confusion_matrix(cf,
@@ -214,22 +295,22 @@ def make_confusion_matrix(cf,
     box_labels = np.asarray(box_labels).reshape(cf.shape[0], cf.shape[1])
 
     # CODE TO GENERATE SUMMARY STATISTICS & TEXT FOR SUMMARY STATS
-    if sum_stats:
-        # Accuracy is sum of diagonal divided by total observations
-        accuracy = np.trace(cf) / float(np.sum(cf))
-
-        # if it is a binary confusion matrix, show some more stats
-        if len(cf) == 2:
-            # Metrics for Binary Confusion Matrices
-            precision = cf[1, 1] / sum(cf[:, 1])
-            recall = cf[1, 1] / sum(cf[1, :])
-            f1_score = 2 * precision * recall / (precision + recall)
-            stats_text = "\n\nAccuracy={:0.3f}\nPrecision={:0.3f}\nRecall={:0.3f}\nF1 Score={:0.3f}".format(
-                accuracy, precision, recall, f1_score)
-        else:
-            stats_text = "\n\nAccuracy={:0.3f}".format(accuracy)
-    else:
-        stats_text = ""
+    # if sum_stats:
+    #     # Accuracy is sum of diagonal divided by total observations
+    #     accuracy = np.trace(cf) / float(np.sum(cf))
+    #
+    #     # if it is a binary confusion matrix, show some more stats
+    #     if len(cf) == 2:
+    #         # Metrics for Binary Confusion Matrices
+    #         precision = cf[1, 1] / sum(cf[:, 1])
+    #         recall = cf[1, 1] / sum(cf[1, :])
+    #         f1_score = 2 * precision * recall / (precision + recall)
+    #         stats_text = "\n\nAccuracy={:0.3f}\nPrecision={:0.3f}\nRecall={:0.3f}\nF1 Score={:0.3f}".format(
+    #             accuracy, precision, recall, f1_score)
+    #     else:
+    #         stats_text = "\n\nAccuracy={:0.3f}".format(accuracy)
+    # else:
+    #     stats_text = ""
 
     # SET FIGURE PARAMETERS ACCORDING TO OTHER ARGUMENTS
     if figsize == None:
@@ -246,9 +327,11 @@ def make_confusion_matrix(cf,
 
     if xyplotlabels:
         plt.ylabel('True label')
-        plt.xlabel('Predicted label' + stats_text)
+        plt.xlabel('Predicted label')
+        # plt.xlabel('Predicted label' + stats_text)
     else:
-        plt.xlabel(stats_text)
+        pass
+        # plt.xlabel(stats_text)
 
     if title:
         plt.title(title)

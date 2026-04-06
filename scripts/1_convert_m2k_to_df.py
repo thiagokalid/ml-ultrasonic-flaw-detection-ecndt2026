@@ -1,15 +1,13 @@
 import json
 import pandas as pd
 from datetime import datetime
-from skimage.feature import hog
 from utils import *
 from pathlib import Path
 
 DATA_ROOT = Path("../data")
 M2K_PATH = DATA_ROOT / "m2k"
 CONFIGS_PATH = DATA_ROOT / "configs"
-PKL_PATH = DATA_ROOT / "pkl"
-ANNOTATION_PATH = DATA_ROOT / "imgs_annotated"
+DATASET_PATH = DATA_ROOT / "dataset"
 
 PROCESSING_PARAMS = {
     "subtraction": False, # "true" or "false"
@@ -25,23 +23,23 @@ DEFAULT_M2K_CONFIG = {
     "tp_transd":'gaussian'
 }
 
-SUBROI_PARAMS = {
+TILES_PARAMS = {
     "overlapping": False,
-    "num_subrois_xaxis": 20,
-    "num_subrois_zaxis": 10,
+    "num_tiles_xaxis": 20,
+    "num_tiles_zaxis": 10,
 }
 
 
 
 if __name__ == "__main__":
     # Read data from these acquisitions:
-    with open(CONFIGS_PATH + f"/inspection_info.json", "r") as f:
+    with open(CONFIGS_PATH / f"inspection_info.json", "r") as f:
         insp_info = json.load(f)
     filename_list = insp_info.keys()
 
     # Data-structure to be converted into dataframe later:
-    DATAFRAME_HEADER = ["filename", "delta_t", "delta_ang", "shot", "subroi_idx", "t_outer", "t_inner", "sscan_max", "contain_flaw",
-                        "subroi_limits", "sub_sscan", "sub_sscan_hog"]
+    DATAFRAME_HEADER = ["filename", "delta_t", "delta_ang", "shot", "tiles_idx", "t_outer", "t_inner", "sscan_max", "contain_flaw",
+                        "tiles_limits", "tiles"]
     df_rows = {key_: [] for key_ in DATAFRAME_HEADER}
 
     # Hard-coded angle span based on used delay-law:
@@ -49,7 +47,7 @@ if __name__ == "__main__":
 
     # Useful information:
     total_iter = np.sum([insp_info[filename]["number_of_shots"] for filename in filename_list])
-    number_of_subrois = (SUBROI_PARAMS["num_subrois_xaxis"] - 1) * (SUBROI_PARAMS["num_subrois_zaxis"] - 1)
+    number_of_tiles = (TILES_PARAMS["num_tiles_xaxis"] - 1) * (TILES_PARAMS["num_tiles_zaxis"] - 1)
 
     # Print start time
     start_time = datetime.now()
@@ -63,14 +61,14 @@ if __name__ == "__main__":
         number_of_shots = file_info["number_of_shots"]
 
         for shot in range(number_of_shots):
-            data_insp = file_m2k.read(M2K_PATH / filename, sel_shots=shot, *DEFAULT_M2K_CONFIG)
+            data_insp = file_m2k.read(str(M2K_PATH / filename), sel_shots=shot, *DEFAULT_M2K_CONFIG)
             hw_gain_db = data_insp.inspection_params.gain_hw
             time_grid = data_insp.time_grid[:, 0]
 
             reduction_method = get_reduction_method(PROCESSING_PARAMS["reduction_method"])
 
             # Get the reference inspection for that given file:
-            channels_ref = get_ref(data_insp.ascan_data[..., 0].shape, M2K_PATH + file_info["ref_filename"], PROCESSING_PARAMS["subtraction"], DEFAULT_M2K_CONFIG)
+            channels_ref = get_ref(data_insp.ascan_data[..., 0].shape, str(M2K_PATH / file_info["ref_filename"]), PROCESSING_PARAMS["subtraction"], DEFAULT_M2K_CONFIG)
 
             # Extract outer and inner surface temporal position:
             t_outer, t_inner = file_info["surface_position"]
@@ -87,21 +85,10 @@ if __name__ == "__main__":
             # Apply (or not) different scale:
             sscan = apply_scale(sscan, PROCESSING_PARAMS["scale"])
 
-            #
-            sscan_hog = hog(
-                sscan,
-                orientations=8,
-                pixels_per_cell=(32, 16),
-                cells_per_block=(1, 1),
-                feature_vector=None,
-                visualize=True,
-                channel_axis=None,
-            )[1]
-
             # Split the sscan into differente regions of interest and append to df rows:
-            split_sscan2subrois(
-                df_rows, sscan, shot, time_grid, alpha_grid, t_outer, t_inner, SUBROI_PARAMS, sscan_hog)
-            df_rows["filename"].extend(number_of_subrois * [filename])
+            split_sscan2tiles(
+                df_rows, sscan, shot, time_grid, alpha_grid, t_outer, t_inner, TILES_PARAMS)
+            df_rows["filename"].extend(number_of_tiles * [filename])
 
             # Update progress counter
             progress += 1
@@ -115,4 +102,4 @@ if __name__ == "__main__":
 
     # Convert to dataframe:
     df = pd.DataFrame(df_rows)
-    df.to_pickle(PKL_PATH / "dataset.pkl")
+    df.to_pickle(DATASET_PATH / "dataset.pkl")

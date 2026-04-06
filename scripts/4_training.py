@@ -11,6 +11,12 @@ warnings.filterwarnings(
     category=UserWarning,
     module=r"pyod\.models\.base"
 )
+warnings.filterwarnings(
+    "ignore",
+    message=r"The cost of rejection must be positive. It has been set to the contamination rate.",
+    category=UserWarning,
+    module=r"pyod\.models\.base"
+)
 
 # === Third-party libraries ===
 import pandas as pd
@@ -18,8 +24,9 @@ import joblib
 import time
 import numpy as np
 from sklearn.model_selection import GridSearchCV
-from tqdm import tqdm
-
+import copy
+from pathlib import Path
+import json
 
 # --- PyOD ---
 from pyod.models.cblof import CBLOF
@@ -36,10 +43,9 @@ from pyod.models.xgbod import XGBOD
 from pyod.models.kpca import KPCA
 
 
-
 CV_GRIDSEARCH = False
 PREDICT_WITH_REJECTION = True
-DEFAULT_CONTAMINATION = 7/100
+DEFAULT_CONTAMINATION = 6/100
 # SCORING = make_scorer(fbeta_score, beta=2)
 SCORING = "f1"
 
@@ -63,17 +69,17 @@ MODELS_PARAMS_GRID = {
     "ocsvm":{
         "kernel":['linear'],
     },
-    # "hbos":{
-    #     "n_bins": [2, 5, 10, 15],
-    #     "alpha": [.05, .1, .2, 1, 2]
-    # },
-    # "inne":{
-    #     "n_estimators": [50, 100, 200]
-    # },
-    # "cblof":{
-    #     "n_clusters": [5, 7, 10, 12, 15],
-    #     "alpha": [0.6, 0.7, 0.8, 0.9, 0.95]
-    # },
+    "hbos":{
+        "n_bins": [2, 5, 10, 15],
+        "alpha": [.05, .1, .2, 1, 2]
+    },
+    "inne":{
+        "n_estimators": [50, 100, 200]
+    },
+    "cblof":{
+        "n_clusters": [5, 7, 10, 12, 15],
+        "alpha": [0.6, 0.7, 0.8, 0.9, 0.95]
+    },
     # "kpca":{
     #     "kernel": ["rbf", "linear"],
     #     "alpha": [.1, 1, 2],
@@ -82,19 +88,25 @@ MODELS_PARAMS_GRID = {
 }
 
 # Useful paths:
-PKL_DATA_PATH = "../data/pkl/"
-MODEL_PATH = PKL_DATA_PATH + "models/"
+DATASET_PATH = Path("../data/dataset")
+MODELS_PATH = Path("../data/models")
 
 # --- Load the dataset ---
-test_df, validation_df, train_df = pd.read_pickle(PKL_DATA_PATH + 'test_df.pkl'),  pd.read_pickle(PKL_DATA_PATH + 'validation_df.pkl'),  pd.read_pickle(PKL_DATA_PATH + 'train_df.pkl')
-X_test, X_validation, X_train = joblib.load(PKL_DATA_PATH + "X_test.pkl"), joblib.load(PKL_DATA_PATH + "X_validation.pkl"), joblib.load(PKL_DATA_PATH + "X_train.pkl")
-y_test, y_validation, y_train = joblib.load(PKL_DATA_PATH + "y_test.pkl"), joblib.load(PKL_DATA_PATH + "y_validation.pkl"), joblib.load(PKL_DATA_PATH + "y_train.pkl")
+test_df, validation_df, train_df = pd.read_pickle(DATASET_PATH / 'test_df.pkl'),  pd.read_pickle(DATASET_PATH / 'validation_df.pkl'),  pd.read_pickle(DATASET_PATH / 'train_df.pkl')
+X_test, X_validation, X_train = joblib.load(DATASET_PATH / "X_test.pkl"), joblib.load(DATASET_PATH / "X_validation.pkl"), joblib.load(DATASET_PATH / "X_train.pkl")
+y_test, y_validation, y_train = joblib.load(DATASET_PATH / "y_test.pkl"), joblib.load(DATASET_PATH / "y_validation.pkl"), joblib.load(DATASET_PATH / "y_train.pkl")
 
 validation_df['y_pred'] = 0
 
+elapsed_time_seconds = {
+    "train": 0.,
+    "test": 0.,
+    "number_of_test_samples": len(X_test),
+    "number_of_train_samples": len(X_train),
+}
 
 #%% Train different models:
-for model in tqdm(MODELS_PARAMS_GRID.keys()):
+for ith_model, model in enumerate(MODELS_PARAMS_GRID.keys()):
     match model:
         case "knn":
             clf = KNN(contamination=DEFAULT_CONTAMINATION, n_neighbors=15)
@@ -125,7 +137,9 @@ for model in tqdm(MODELS_PARAMS_GRID.keys()):
             print(f"Unknown model type: {model}")
             continue
 
-    print("Training " + model + "...")
+    curr_elapsed_time = copy.deepcopy(elapsed_time_seconds)
+
+    print("Training " + model + f"... (Model {ith_model + 1} out of {len(MODELS_PARAMS_GRID)})")
     t0 = time.time()
     if CV_GRIDSEARCH:
         search_space = MODELS_PARAMS_GRID[model] | COMMON_PARAMS_GRID
@@ -137,15 +151,19 @@ for model in tqdm(MODELS_PARAMS_GRID.keys()):
     clf.fit(X_train, y_train)
 
     elapsed_time = time.time() - t0
+    curr_elapsed_time["train"] = elapsed_time
     print(f"Finished training in {elapsed_time:.2f} seconds.")
 
 
     # --- Predict anomalies ---
     print("Testing " + model + "...")
-    t0 = time.time()
     if PREDICT_WITH_REJECTION:
+        t0 = time.time()
         y_pred = clf.predict_with_rejection(X_test, T=32, delta=.05)
         y_pred[y_pred == -2] = 0
+        elapsed_time = time.time() - t0
+        curr_elapsed_time["test"] = elapsed_time
+        print(f"Finished in {elapsed_time:.2f} seconds.")
 
         y_pred_val = clf.predict_with_rejection(X_validation, T=32, delta=.05)
         y_pred_val[y_pred_val == -2] = 0
@@ -158,8 +176,6 @@ for model in tqdm(MODELS_PARAMS_GRID.keys()):
         y_pred_val = clf.predict(X_validation)
 
         y_pred_test = clf.predict(X_test)
-    tf = time.time() - t0
-    print(f"Finished in {tf:.2f} seconds.")
 
     print("Computing anomaly scores " + model + "...")
     if hasattr(clf, "decision_function"):
@@ -182,13 +198,15 @@ for model in tqdm(MODELS_PARAMS_GRID.keys()):
     tf = time.time() - t0
     print(f"Finished in {tf:.2f} seconds.")
 
+    (MODELS_PATH / model).mkdir(parents=True, exist_ok=True)
+
     prediction_df = test_df.copy()
     prediction_df["y_pred"] = y_pred
-    prediction_df.to_pickle(MODEL_PATH + model + '_prediction_df.pkl')
+    prediction_df.to_pickle(MODELS_PATH / model / 'prediction_df.pkl')
 
-    joblib.dump(clf, MODEL_PATH + model + '_clf.pkl')
-    joblib.dump(y_pred, MODEL_PATH + model + '_y_pred.pkl')
-    joblib.dump(y_scores, MODEL_PATH + model + '_y_scores.pkl')
+    joblib.dump(clf, MODELS_PATH / model / 'clf.pkl')
+    joblib.dump(y_pred, MODELS_PATH / model / 'y_pred.pkl')
+    joblib.dump(y_scores, MODELS_PATH / model / 'y_scores.pkl')
 
 
     prediction_val_df = validation_df.copy()
@@ -202,9 +220,11 @@ for model in tqdm(MODELS_PARAMS_GRID.keys()):
     y_scores_show = np.concatenate((y_scores, y_scores_val, y_scores_train), axis=0)
     y_pred_show = np.concatenate((y_pred, y_pred_val, y_pred_train), axis=0)
 
-    predictions_df_show.to_pickle(MODEL_PATH + model + '_prediction_df_show.pkl')
-    joblib.dump(y_pred_show, MODEL_PATH + model + '_y_pred_show.pkl')
-    joblib.dump(y_scores_show, MODEL_PATH + model + '_y_scores_show.pkl')
+    predictions_df_show.to_pickle(MODELS_PATH / model / 'prediction_df_show.pkl')
+    joblib.dump(y_pred_show, MODELS_PATH / model / 'y_pred_show.pkl')
+    joblib.dump(y_scores_show, MODELS_PATH / model / 'y_scores_show.pkl')
+    with open("elapsed_time.json", "w") as f:
+        json.dump(curr_elapsed_time, f, indent=4)
 
 
 

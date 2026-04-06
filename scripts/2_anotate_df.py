@@ -4,12 +4,12 @@ from utils import *
 import re
 import cv2
 from tqdm import tqdm
+from pathlib import Path
 
 DATA_ROOT = Path("../data")
-M2K_PATH = DATA_ROOT / "m2k"
+DATASET_ROOT = DATA_ROOT / "dataset"
+M2K_PATH = DATA_ROOT / "us_dataset"
 CONFIGS_PATH = DATA_ROOT / "configs"
-PKL_PATH = DATA_ROOT / "pkl"
-ANNOTATION_PATH = DATA_ROOT / "imgs_annotated"
 
 DEFAULT_M2K_CONFIG = {
     "freq_transd":5,
@@ -17,27 +17,27 @@ DEFAULT_M2K_CONFIG = {
     "tp_transd":'gaussian'
 }
 
-SUBROI_PARAMS = {
+TILES_PARAMS = {
     "overlapping": False,
-    "num_subrois_xaxis": 20,
-    "num_subrois_zaxis": 10,
+    "num_tiles_xaxis": 20,
+    "num_tiles_zaxis": 10,
 }
 
 if __name__ == "__main__":
-    df = pd.read_pickle(PKL_PATH / "dataset.pkl")
+    df = pd.read_pickle(DATASET_ROOT / "dataset.pkl")
 
     # Hard-coded angle span based on used delay-law:
     alpha_grid = np.radians(np.arange(-45, 45 + .5, .5))
 
     # Read anotations:
-    with open(ANNOTATION_PATH / "/_annotations.coco.json", "r") as f:
+    with open(CONFIGS_PATH / "_annotations.coco.json", "r") as f:
         annotations_insp = json.load(f)
     id_to_info = {img["id"]: img for img in annotations_insp["images"]}
 
     SSCAN_SIZE = (1875, 181)
 
     # Read data from these acquisitions:
-    with open(CONFIGS_PATH / "/inspection_info.json", "r") as f:
+    with open(CONFIGS_PATH / "inspection_info.json", "r") as f:
         insp_info = json.load(f)
     filename_list = insp_info.keys()
     filename_list = [list(filename_list)[0]]
@@ -64,10 +64,10 @@ if __name__ == "__main__":
         if len(df_selected) > 0:
             file_info = insp_info[m2k_filename]
             t_outer, t_inner = file_info["surface_position"]
-            data_insp = file_m2k.read(M2K_PATH + m2k_filename, read_ascan=False, *DEFAULT_M2K_CONFIG)
+            data_insp = file_m2k.read(str(M2K_PATH / m2k_filename), read_ascan=False, *DEFAULT_M2K_CONFIG)
             time_grid = data_insp.time_grid[:, 0]
 
-            new_flags = mark_subsscans(df_selected, mask, time_grid, alpha_grid, t_outer, t_inner, SUBROI_PARAMS)
+            new_flags = mark_tiles(df_selected, mask, time_grid, alpha_grid, t_outer, t_inner, TILES_PARAMS)
             df.loc[selection, "contain_flaw"] = df.loc[selection, "contain_flaw"].fillna(0) + new_flags
 
         else:
@@ -76,5 +76,5 @@ if __name__ == "__main__":
     df.loc[df["contain_flaw"] >= 1, "contain_flaw"] = 1
     df.loc[df["contain_flaw"] != 1, "contain_flaw"] = 0
 
-    # Convert to dataframe:
-    df.to_pickle(PKL_PATH / "dataset_annotated.pkl")
+    # Overwrite the dataset with the new annotated version:
+    df.to_pickle(DATASET_ROOT / "dataset.pkl")

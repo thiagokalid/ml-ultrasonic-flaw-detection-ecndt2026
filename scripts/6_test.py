@@ -14,17 +14,19 @@ from sklearn.metrics import (
 )
 from datetime import datetime
 
+from pathlib import Path
 from scripts.utils import make_confusion_matrix
 
 # --- Useful paths & constants ---
-PKL_DATA_PATH = "../data/pkl/"
-MODEL_PATH = PKL_DATA_PATH + "models/"
+DATA_PATH = Path("../data/")
+DATASET_PATH = DATA_PATH / "dataset"
+MODELS_PATH = DATA_PATH / "models"
 PLOT_CONFUSION_MATRIX = True
 BETA_SCORE_CTE = 2
 
 # Load dataset once
-X_test = joblib.load(PKL_DATA_PATH + "X_test.pkl")
-y_test = joblib.load(PKL_DATA_PATH + "y_test.pkl")
+X_test = joblib.load(DATASET_PATH / "X_test.pkl")
+y_test = joblib.load(DATASET_PATH / "y_test.pkl")
 
 # Candidate models
 models = ["lof"]
@@ -34,8 +36,8 @@ results = []
 roc_curves = {}
 for model in models:
     # Load predictions and scores
-    y_pred = joblib.load(MODEL_PATH + f"{model}_y_pred.pkl")
-    y_scores = joblib.load(MODEL_PATH + f"{model}_y_scores.pkl")
+    y_pred = joblib.load(MODELS_PATH / model / f"y_pred.pkl")
+    y_scores = joblib.load(MODELS_PATH / model / f"y_scores.pkl")
 
     # Convert prediction to {0,1}
     y_pred = np.where(y_pred > 0, 1, 0)

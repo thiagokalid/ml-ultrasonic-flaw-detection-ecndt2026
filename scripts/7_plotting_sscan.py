@@ -7,17 +7,19 @@ from tqdm import tqdm
 from framework import file_m2k
 from framework.post_proc import envelope
 import joblib
+from pathlib import Path
 
 PLOT_DATA = True
 DEBUG_PLOT = True
-DATA_ROOT = "../data/m2k/"
-PKL_DATA_PATH = "../data/pkl/"
-MODEL_PATH = PKL_DATA_PATH + "models/"
+DATA_PATH = Path("../data")
+US_DATA_PATH = Path("../data/us_dataset")
+DATASET_PATH = DATA_PATH / "dataset"
+MODELS_PATH = DATA_PATH / "models"
 LOG_CTE = 1e-6
 model = 'lof'
 REDUCTION_METHOD = np.median
-NUM_SUBROIS_YAXIS = 10
-NUM_SUBROIS_XAXIS = 20
+NUM_TILES_YAXIS = 10
+NUM_TILES_XAXIS = 20
 FILENAME = [
     # "TuboNovo_260shots.m2k",
     "passive_dir_0degree_v2.m2k",
@@ -35,9 +37,9 @@ with open('../data/configs/inspection_info.json', 'r') as f:
 inspection_info = {fname: inspection_info[fname] for fname in FILENAME if fname in inspection_info}
 
 # Load predictions and scores
-predictions_df = pd.read_pickle(MODEL_PATH + model + "_prediction_df_show.pkl")
-y_scores = joblib.load(MODEL_PATH + model + "_y_scores_show.pkl")
-y_combined = joblib.load(PKL_DATA_PATH + "y_combined.pkl")
+predictions_df = pd.read_pickle(MODELS_PATH / model / "prediction_df_show.pkl")
+y_scores = joblib.load(MODELS_PATH / model / "y_scores_show.pkl")
+y_combined = joblib.load(DATASET_PATH / "y_combined.pkl")
 
 plt.ioff()  # Disable interactive mode
 
@@ -45,8 +47,8 @@ for fname in FILENAME:
     info = inspection_info[fname]
     num_shots = info["number_of_shots"]
     t_outer, t_inner = info['surface_position']
-    subroi_xaxis_borders = np.linspace(-45, 45, NUM_SUBROIS_XAXIS)
-    subroi_yaxis_borders = np.linspace(t_outer, t_inner, NUM_SUBROIS_YAXIS)
+    tiles_xaxis_borders = np.linspace(-45, 45, NUM_TILES_XAXIS)
+    tiles_yaxis_borders = np.linspace(t_outer, t_inner, NUM_TILES_YAXIS)
 
     for curr_shot in tqdm(range(num_shots), desc=f"Processing {fname}"):
         # --- Prepare heatmap from scores ---
@@ -54,7 +56,7 @@ for fname in FILENAME:
 
         # --- Retrieve data ---
         data_insp = file_m2k.read(
-            DATA_ROOT + fname,
+            str(US_DATA_PATH / fname),
             freq_transd=5,
             bw_transd=0.5,
             tp_transd='gaussian',
@@ -68,12 +70,12 @@ for fname in FILENAME:
 
         # --- Prepare heatmap from scores ---
         current_mask = (predictions_df["filename"] == fname) & (predictions_df["shot"] == curr_shot)
-        normalize_factor = [(np.min(y_scores[predictions_df["subroi_idx"] == idx]), np.max(y_scores[predictions_df["subroi_idx"] == idx])) for idx in np.unique(predictions_df["subroi_idx"])]
+        normalize_factor = [(np.min(y_scores[predictions_df["tiles_idx"] == idx]), np.max(y_scores[predictions_df["tiles_idx"] == idx])) for idx in np.unique(predictions_df["tiles_idx"])]
 
         heatmap = np.zeros_like(sscan_log)
         if np.any(current_mask):
-            borders = predictions_df[current_mask]['subroi_limits']
-            subroi_idx = predictions_df[current_mask]['subroi_idx']
+            borders = predictions_df[current_mask]['tiles_limits']
+            tiles_idx = predictions_df[current_mask]['tiles_idx']
             scores = y_scores[current_mask]
             x_line = np.linspace(-45, 45, heatmap.shape[1])
             y_line = time_grid
@@ -83,8 +85,8 @@ for fname in FILENAME:
                 mask_x = (x_line >= xbeg) & (x_line <= xend)
                 mask_y = (y_line >= zbeg) & (y_line <= zend)
                 mask = mask_y[:, None] & mask_x[None, :]
-                curr_subroi = subroi_idx.iloc[ii]
-                heatmap += ((score - normalize_factor[curr_subroi][0]) / (normalize_factor[curr_subroi][1] - normalize_factor[curr_subroi][0])) * mask[:, 0, :]
+                curr_tiles = tiles_idx.iloc[ii]
+                heatmap += ((score - normalize_factor[curr_tiles][0]) / (normalize_factor[curr_tiles][1] - normalize_factor[curr_tiles][0])) * mask[:, 0, :]
 
             # heatmap = heatmap / (heatmap.max() + 1e-8)
 
@@ -104,23 +106,23 @@ for fname in FILENAME:
         )
         axes[0].plot(np.linspace(-45, 45), t_outer * np.ones_like(np.linspace(-45, 45)), ':', color='lime', linewidth=2)
         axes[0].plot(np.linspace(-45, 45), t_inner * np.ones_like(np.linspace(-45, 45)), ':', color='lime', linewidth=2)
-        axes[0].set_xticks(subroi_xaxis_borders)
-        axes[0].set_yticks(subroi_yaxis_borders)
-        axes[0].set_yticklabels([f"{y:.1f}" for y in subroi_yaxis_borders])
+        axes[0].set_xticks(tiles_xaxis_borders)
+        axes[0].set_yticks(tiles_yaxis_borders)
+        axes[0].set_yticklabels([f"{y:.1f}" for y in tiles_yaxis_borders])
         axes[0].grid(color='k', alpha=0.25)
         axes[0].set_title("S-scan with Predicted Anomalies")
 
         # Determine 4 negative and 4 positive ticks
-        x = np.array(subroi_xaxis_borders)
+        x = np.array(tiles_xaxis_borders)
         num_ticks_each_side = 4
-        x_ticks_neg = subroi_xaxis_borders[:10:2]  # 4 negatives
+        x_ticks_neg = tiles_xaxis_borders[:10:2]  # 4 negatives
         x_ticks_pos = x_ticks_neg[::-1] * -1
         selected_ticks = np.concatenate([x_ticks_neg, x_ticks_pos])
 
         # Build tick labels: show only near the selected tick positions
         axes[0].set_xticklabels([
             f"{xv:.0f}" if np.isclose(xv, selected_ticks, atol=1e-6).any() else ""
-            for xv in subroi_xaxis_borders
+            for xv in tiles_xaxis_borders
         ])
         axes[0].set_xlabel(r"$\alpha$-axis / (degrees)")
         axes[0].set_ylabel(r"Time / ($\mathrm{\mu s}$)")
@@ -128,7 +130,7 @@ for fname in FILENAME:
         # Plot anomaly bounding boxes on S-scan
         anomaly_mask = current_mask & (predictions_df["y_pred"] == 1)
         if np.any(anomaly_mask):
-            for ii, border in enumerate(predictions_df[anomaly_mask]['subroi_limits']):
+            for ii, border in enumerate(predictions_df[anomaly_mask]['tiles_limits']):
                 (xbeg, xend), (zbeg, zend) = border
                 xbeg, xend = np.degrees(xbeg), np.degrees(xend)
                 label = "Anomaly" if ii == 0 else "_"
@@ -153,29 +155,29 @@ for fname in FILENAME:
         )
         axes[1].plot(np.linspace(-45, 45), t_outer * np.ones_like(np.linspace(-45, 45)), ':', color='lime', linewidth=2)
         axes[1].plot(np.linspace(-45, 45), t_inner * np.ones_like(np.linspace(-45, 45)), ':', color='lime', linewidth=2)
-        axes[1].set_xticks(subroi_xaxis_borders)
-        axes[1].set_yticks(subroi_yaxis_borders)
-        axes[1].set_yticklabels([f"{y:.1f}" for y in subroi_yaxis_borders])
+        axes[1].set_xticks(tiles_xaxis_borders)
+        axes[1].set_yticks(tiles_yaxis_borders)
+        axes[1].set_yticklabels([f"{y:.1f}" for y in tiles_yaxis_borders])
         axes[1].grid(color='k', alpha=0.25)
         axes[1].set_title("Predicted Flaw Score Heatmap (Normalized per patch)")
         axes[1].set_xlabel(r"$\alpha$-axis / (degrees)")
         axes[1].set_ylabel(r"Time / ($\mathrm{\mu s}$)")
 
         # Determine 4 negative and 4 positive ticks
-        x = np.array(subroi_xaxis_borders)
+        x = np.array(tiles_xaxis_borders)
         num_ticks_each_side = 4
-        x_ticks_neg = subroi_xaxis_borders[:10:2]  # 4 negatives
+        x_ticks_neg = tiles_xaxis_borders[:10:2]  # 4 negatives
         x_ticks_pos = x_ticks_neg[::-1] * -1
         selected_ticks = np.concatenate([x_ticks_neg, x_ticks_pos])
 
         # Build tick labels: show only near the selected tick positions
         axes[1].set_xticklabels([
             f"{xv:.0f}" if np.isclose(xv, selected_ticks, atol=1e-6).any() else ""
-            for xv in subroi_xaxis_borders
+            for xv in tiles_xaxis_borders
         ])
 
         axes[1].set_yticklabels([
-            f"{y:.1f}" if i % 2 == 0 else "" for i, y in enumerate(subroi_yaxis_borders)
+            f"{y:.1f}" if i % 2 == 0 else "" for i, y in enumerate(tiles_yaxis_borders)
         ])
         fig.colorbar(im, ax=axes[1], fraction=0.046, pad=0.04)
 
@@ -218,9 +220,9 @@ for fname in FILENAME:
         )
         axes[2].plot(np.linspace(-45, 45), t_outer * np.ones_like(np.linspace(-45, 45)), ':', color='lime', linewidth=2)
         axes[2].plot(np.linspace(-45, 45), t_inner * np.ones_like(np.linspace(-45, 45)), ':', color='lime', linewidth=2)
-        axes[2].set_xticks(subroi_xaxis_borders)
-        axes[2].set_yticks(subroi_yaxis_borders)
-        axes[2].set_yticklabels([f"{y:.1f}" for y in subroi_yaxis_borders])
+        axes[2].set_xticks(tiles_xaxis_borders)
+        axes[2].set_yticks(tiles_yaxis_borders)
+        axes[2].set_yticklabels([f"{y:.1f}" for y in tiles_yaxis_borders])
         axes[2].grid(color='k', alpha=0.25)
         axes[2].set_title("Flaw Position Ground-truth")
         axes[2].set_xlabel(r"$\alpha$-axis / (degrees)")
@@ -228,20 +230,20 @@ for fname in FILENAME:
         axes[2].set_ylim([time_grid[-1], time_grid[0]])
 
         # Determine 4 negative and 4 positive ticks
-        x = np.array(subroi_xaxis_borders)
+        x = np.array(tiles_xaxis_borders)
         num_ticks_each_side = 4
-        x_ticks_neg = subroi_xaxis_borders[:10:2]  # 4 negatives
+        x_ticks_neg = tiles_xaxis_borders[:10:2]  # 4 negatives
         x_ticks_pos = x_ticks_neg[::-1] * -1
         selected_ticks = np.concatenate([x_ticks_neg, x_ticks_pos])
 
         # Build tick labels: show only near the selected tick positions
         axes[2].set_xticklabels([
             f"{xv:.0f}" if np.isclose(xv, selected_ticks, atol=1e-6).any() else ""
-            for xv in subroi_xaxis_borders
+            for xv in tiles_xaxis_borders
         ])
 
         axes[2].set_yticklabels([
-            f"{y:.1f}" if i % 2 == 0 else "" for i, y in enumerate(subroi_yaxis_borders)
+            f"{y:.1f}" if i % 2 == 0 else "" for i, y in enumerate(tiles_yaxis_borders)
         ])
         #%%
         plt.tight_layout()

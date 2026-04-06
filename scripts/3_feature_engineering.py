@@ -7,10 +7,10 @@ import joblib
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
-
+from pathlib import Path
 
 # Data root:
-PKL_DATA_PATH = "../data/pkl/"
+DATASET_PATH = Path("../data/dataset/")
 
 # --- Parameters ---
 N_PCA_COMPONENTS = 50  # e.g., reduce angle dimension to 5
@@ -25,9 +25,12 @@ def pad_to_shape(arr, target_shape):
 
 
 # --- Load the dataset ---
-df = pd.read_pickle(PKL_DATA_PATH + 'dataset_annotated.pkl')
+df = pd.read_pickle(DATASET_PATH / 'dataset.pkl')
 
-print(len(df))
+if "contain_flaw" not in df.columns:
+    raise RuntimeError("Annotation script was not successful. Please execute '2_annotate_df.py' again.")
+
+print("Dataset size: ", len(df))
 total_count = len(df)
 TRAINING_METHOD = "Semi-supervised"
 if TRAINING_METHOD == "Semi-supervised":
@@ -64,11 +67,11 @@ else:
 # -- PCA features --
 
 # --- Find max shape on training set ---
-max_shape = tuple(np.max([arr.shape for arr in train_df['sub_sscan']], axis=0))
+max_shape = tuple(np.max([arr.shape for arr in train_df['tiles']], axis=0))
 
 # --- Pad and flatten ---
-X_pxs_train = np.stack(train_df['sub_sscan'].apply(lambda x: pad_to_shape(x, max_shape).ravel()))
-X_pxs_test = np.stack(test_df['sub_sscan'].apply(lambda x: pad_to_shape(x, max_shape).ravel()))
+X_pxs_train = np.stack(train_df['tiles'].apply(lambda x: pad_to_shape(x, max_shape).ravel()))
+X_pxs_test = np.stack(test_df['tiles'].apply(lambda x: pad_to_shape(x, max_shape).ravel()))
 
 # --- Fit PCA on training ---
 pca = PCA(n_components=N_PCA_COMPONENTS)
@@ -81,8 +84,8 @@ X_pxs_test_pca = pca.transform(X_pxs_test)
 #%%
 # -- FFT features --
 
-X_fft_train = train_df['sub_sscan'].apply(np.fft.fft2)
-X_fft_test = test_df['sub_sscan'].apply(np.fft.fft2)
+X_fft_train = train_df['tiles'].apply(np.fft.fft2)
+X_fft_test = test_df['tiles'].apply(np.fft.fft2)
 
 
 #%% Select features for training and testing:
@@ -95,15 +98,15 @@ for df, parts, pca_features, X_fft in zip(
         [X_pxs_train_pca, X_pxs_test_pca],
         [X_fft_train, X_fft_test]
 ):
-    # -- One-hot encode subroi_idx --
-    subroi_ohe = pd.get_dummies(df['subroi_idx'], prefix='subroi')
-    parts.append(subroi_ohe)
+    # -- One-hot encode tiles_idx --
+    tiles_ohe = pd.get_dummies(df['tiles_idx'], prefix='tiles')
+    parts.append(tiles_ohe)
 
     # -- Statistical features --
     for operation in [np.mean, np.std, np.max, np.min, np.ptp, np.median]:
         operation_name = operation.__name__
         operation_db = lambda x: operation(x)
-        parts.append(df['sub_sscan'].apply(operation_db).to_frame(name=operation_name))
+        parts.append(df['tiles'].apply(operation_db).to_frame(name=operation_name))
 
     # -- PCA features --
     pca_df = pd.DataFrame(pca_features, index=df.index)
@@ -171,14 +174,14 @@ print(f"{'Flaws in test?':25} {test_df['contain_flaw'].any()} "
 
 
 # %% Save X and y to disk
-joblib.dump(X_train, PKL_DATA_PATH + "X_train.pkl")
-joblib.dump(X_test, PKL_DATA_PATH + "X_test.pkl")
-joblib.dump(X_validation, PKL_DATA_PATH + "X_validation.pkl")
-joblib.dump(y_train.to_numpy(), PKL_DATA_PATH + "y_train.pkl")
-joblib.dump(y_test.to_numpy(), PKL_DATA_PATH + "y_test.pkl")
-joblib.dump(y_validation.to_numpy(), PKL_DATA_PATH + "y_validation.pkl")
-test_df.to_pickle(PKL_DATA_PATH + "test_df.pkl")
-train_df.to_pickle(PKL_DATA_PATH + "train_df.pkl")
-validation_df.to_pickle(PKL_DATA_PATH + "validation_df.pkl")
-X_combined.to_pickle(PKL_DATA_PATH + "X_combined.pkl")
-y_combined.to_pickle(PKL_DATA_PATH + "y_combined.pkl")
+joblib.dump(X_train, DATASET_PATH / "X_train.pkl")
+joblib.dump(X_test, DATASET_PATH / "X_test.pkl")
+joblib.dump(X_validation, DATASET_PATH / "X_validation.pkl")
+joblib.dump(y_train.to_numpy(), DATASET_PATH / "y_train.pkl")
+joblib.dump(y_test.to_numpy(), DATASET_PATH / "y_test.pkl")
+joblib.dump(y_validation.to_numpy(), DATASET_PATH / "y_validation.pkl")
+test_df.to_pickle(DATASET_PATH / "test_df.pkl")
+train_df.to_pickle(DATASET_PATH / "train_df.pkl")
+validation_df.to_pickle(DATASET_PATH / "validation_df.pkl")
+X_combined.to_pickle(DATASET_PATH / "X_combined.pkl")
+y_combined.to_pickle(DATASET_PATH / "y_combined.pkl")
