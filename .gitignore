@@ -5,8 +5,9 @@ __pycache__/
 *.npy
 
 # Data / Results
-*.pkl
-*.m2k
+data/us_dataset
+data/configs
+data/dataset
 
 # C extensions
 *.so
