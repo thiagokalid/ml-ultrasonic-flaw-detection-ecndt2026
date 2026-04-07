@@ -31,7 +31,8 @@ X_test = joblib.load(DATASET_PATH / "X_test.pkl")
 y_test = joblib.load(DATASET_PATH / "y_test.pkl")
 
 # Candidate models
-models = ["lof", "iforest", "knn", "hbos", "ocsvm"]
+models = ["lof", "knn", "iforest", "threshold"]
+# models = ["lof", "iforest", "knn", "hbos", "ocsvm"]
 
 # Store results
 results = []
@@ -81,13 +82,13 @@ for model in models:
     })
 
     if PLOT_CONFUSION_MATRIX:
-        make_confusion_matrix(cm, group_names=["Normal", "Anomaly"], categories=["Normal", "Anomaly"], cbar=False, figsize=(7 * .55, 6 * .55))
+        make_confusion_matrix(cm, group_names=["Normal", "Anomaly"], categories=["Normal", "Anomaly"], cbar=False, figsize=(7 * .5, 6 * .5))
         plt.tight_layout()
         plt.savefig(PROJECT_ROOT / f"figures/{model}_confusion_matrix.pdf", dpi=300)
 
     # Convert to DataFrame
 results_df = pd.DataFrame(results)
-results_df.round(3).to_latex(PROJECT_ROOT / "figures/{model}_results.tex")
+results_df.round(3).to_latex(DATA_ROOT / "results" / "table_results.tex")
 
 pd.set_option("display.max_columns", None)  # show all columns
 pd.set_option("display.width", None)       # don't wrap to next line

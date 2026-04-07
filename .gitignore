@@ -5,9 +5,7 @@ __pycache__/
 *.npy
 
 # Data / Results
-data/us_dataset
-data/configs
-data/dataset
+data/
 
 # C extensions
 *.so
