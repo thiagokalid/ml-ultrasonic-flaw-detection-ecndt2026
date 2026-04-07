@@ -22,14 +22,14 @@ DATA_PATH = Path("../data/")
 DATASET_PATH = DATA_PATH / "dataset"
 MODELS_PATH = DATA_PATH / "models"
 PLOT_CONFUSION_MATRIX = True
-BETA_SCORE_CTE = 1
+BETA_SCORE_CTE = 2
 
 # Load dataset once
 X_test = joblib.load(DATASET_PATH / "X_test.pkl")
 y_test = joblib.load(DATASET_PATH / "y_test.pkl")
 
 # Candidate models
-models = ["lof"]
+models = ["lof", "iforest", "knn", "hbos", "ocsvm"]
 
 # Store results
 results = []
@@ -98,10 +98,9 @@ timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 filename = f"results_{timestamp}.txt"
 
 # Save to txt
-with open(filename, "w") as f:
+with open(MODELS_PATH / "results" /filename, "w") as f:
     f.write(df_str)
 
-print(f"Saved as {filename}")
 
 
 #%% === Plot ROC AUC curves for all models ===

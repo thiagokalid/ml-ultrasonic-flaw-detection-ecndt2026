@@ -41,11 +41,12 @@ from pyod.models.abod import ABOD
 from pyod.models.pca import PCA
 from pyod.models.xgbod import XGBOD
 from pyod.models.kpca import KPCA
+from pyod.models.knn import KNN
 
 
 CV_GRIDSEARCH = False
 PREDICT_WITH_REJECTION = True
-DEFAULT_CONTAMINATION = 2/100
+DEFAULT_CONTAMINATION = 7/100
 # SCORING = make_scorer(fbeta_score, beta=2)
 SCORING = "f1"
 
@@ -60,6 +61,13 @@ MODELS_PARAMS_GRID = {
         "novelty": [True],
         "n_jobs": [-1]
     },
+    "knn": {
+        "n_neighbors": [10, 15, 20, 25],
+        "p": [1],
+        "novelty": [True],
+        "n_jobs": [-1]
+    }
+    ,
     "iforest":{
         "n_estimators": [25, 50, 100, 200],
         "n_jobs": [-1],
@@ -72,19 +80,7 @@ MODELS_PARAMS_GRID = {
     "hbos":{
         "n_bins": [2, 5, 10, 15],
         "alpha": [.05, .1, .2, 1, 2]
-    },
-    "inne":{
-        "n_estimators": [50, 100, 200]
-    },
-    "cblof":{
-        "n_clusters": [5, 7, 10, 12, 15],
-        "alpha": [0.6, 0.7, 0.8, 0.9, 0.95]
-    },
-    # "kpca":{
-    #     "kernel": ["rbf", "linear"],
-    #     "alpha": [.1, 1, 2],
-    #     "n_components": [20, 50, 100]
-    # }
+    }
 }
 
 # Useful paths:
