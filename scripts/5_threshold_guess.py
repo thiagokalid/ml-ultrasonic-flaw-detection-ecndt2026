@@ -7,9 +7,11 @@ from pathlib import Path
 
 
 # Useful paths:
-DATA_PATH = Path("../data")
-DATASET_PATH = DATA_PATH / "dataset"
-MODELS_PATH = DATA_PATH / "models"
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+DATA_ROOT = PROJECT_ROOT / "data"
+DATASET_PATH = DATA_ROOT / "dataset"
+MODELS_PATH = DATA_ROOT / "models"
+US_DATA = DATA_ROOT / "us_dataset"
 model = 'threshold'
 
 

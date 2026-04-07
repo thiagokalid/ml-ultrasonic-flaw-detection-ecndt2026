@@ -8,8 +8,7 @@ from framework import file_m2k
 from framework.post_proc import envelope
 import joblib
 
-from scripts.utils import plot_tiles_labels
-from utils import sscan2tiles, tiles2sscan
+from utils import sscan2tiles, tiles2sscan, plot_tiles_labels
 
 linewidth = 6.2
 
@@ -17,7 +16,8 @@ linewidth = 6.2
 # Relevant paths:
 PLOT_DATA = True
 DEBUG_PLOT = True
-DATA_ROOT = Path("../data/")
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+DATA_ROOT = PROJECT_ROOT / "data"
 DATASET_PATH = DATA_ROOT / "dataset"
 MODELS_PATH = DATA_ROOT / "models"
 US_DATA = DATA_ROOT / "us_dataset"
@@ -33,7 +33,7 @@ NUM_tilesS_XAXIS = 20
 curr_shot = 178
 
 # Load inspection info
-with open('../data/configs/inspection_info.json', 'r') as f:
+with open(DATA_ROOT / 'configs/inspection_info.json', 'r') as f:
     inspection_info = json.load(f)
 inspection_info = {FILENAME: inspection_info[FILENAME]}
 
@@ -188,7 +188,7 @@ m2k_filename = re.sub(r"\.", "_", m2k_filename)
 m2k_filename = f"{m2k_filename}_shot{curr_shot}_"
 
 # List all PNGs in the directory
-mask_dir = "../data/masks/"
+mask_dir = DATA_ROOT / "masks/"
 png_files = [f for f in os.listdir(mask_dir) if f.endswith(".png")]
 
 # Find the one that starts with m2k_filename

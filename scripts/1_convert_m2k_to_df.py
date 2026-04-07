@@ -4,6 +4,7 @@ from datetime import datetime
 from utils import *
 from pathlib import Path
 
+
 DATA_ROOT = Path("../data")
 M2K_PATH = DATA_ROOT / "m2k"
 CONFIGS_PATH = DATA_ROOT / "configs"

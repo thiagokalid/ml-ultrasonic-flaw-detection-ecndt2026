@@ -6,9 +6,11 @@ import cv2
 from tqdm import tqdm
 from pathlib import Path
 
-DATA_ROOT = Path("../data")
-DATASET_ROOT = DATA_ROOT / "dataset"
-M2K_PATH = DATA_ROOT / "us_dataset"
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+DATA_ROOT = PROJECT_ROOT / "data"
+DATASET_PATH = DATA_ROOT / "dataset"
+MODELS_PATH = DATA_ROOT / "models"
+US_DATA = DATA_ROOT / "us_dataset"
 CONFIGS_PATH = DATA_ROOT / "configs"
 
 DEFAULT_M2K_CONFIG = {
@@ -24,7 +26,7 @@ TILES_PARAMS = {
 }
 
 if __name__ == "__main__":
-    df = pd.read_pickle(DATASET_ROOT / "dataset.pkl")
+    df = pd.read_pickle(DATASET_PATH / "dataset.pkl")
 
     # Hard-coded angle span based on used delay-law:
     alpha_grid = np.radians(np.arange(-45, 45 + .5, .5))
@@ -77,4 +79,4 @@ if __name__ == "__main__":
     df.loc[df["contain_flaw"] != 1, "contain_flaw"] = 0
 
     # Overwrite the dataset with the new annotated version:
-    df.to_pickle(DATASET_ROOT / "dataset.pkl")
+    df.to_pickle(DATASET_PATH / "dataset.pkl")

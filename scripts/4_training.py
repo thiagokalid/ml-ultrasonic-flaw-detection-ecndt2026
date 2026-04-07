@@ -84,8 +84,11 @@ MODELS_PARAMS_GRID = {
 }
 
 # Useful paths:
-DATASET_PATH = Path("../data/dataset")
-MODELS_PATH = Path("../data/models")
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+DATA_ROOT = PROJECT_ROOT / "data"
+DATASET_PATH = DATA_ROOT / "dataset"
+MODELS_PATH = DATA_ROOT / "models"
+US_DATA = DATA_ROOT / "us_dataset"
 
 # --- Load the dataset ---
 test_df, validation_df, train_df = pd.read_pickle(DATASET_PATH / 'test_df.pkl'),  pd.read_pickle(DATASET_PATH / 'validation_df.pkl'),  pd.read_pickle(DATASET_PATH / 'train_df.pkl')

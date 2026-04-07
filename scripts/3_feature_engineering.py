@@ -10,7 +10,11 @@ from sklearn.model_selection import train_test_split
 from pathlib import Path
 
 # Data root:
-DATASET_PATH = Path("../data/dataset/")
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+DATA_ROOT = PROJECT_ROOT / "data"
+DATASET_PATH = DATA_ROOT / "dataset"
+MODELS_PATH = DATA_ROOT / "models"
+US_DATA = DATA_ROOT / "us_dataset"
 
 # --- Parameters ---
 N_PCA_COMPONENTS = 50  # e.g., reduce angle dimension to 5
